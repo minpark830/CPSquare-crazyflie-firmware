@@ -1,38 +1,8 @@
-# Crazyflie Firmware  [![CI](https://github.com/bitcraze/crazyflie-firmware/workflows/CI/badge.svg)](https://github.com/bitcraze/crazyflie-firmware/actions?query=workflow%3ACI)
+# CPSquare-Bitcraze-firmware
 
-This project contains the source code for the firmware used in the Crazyflie range of platforms, including the Crazyflie 2.x and the Roadrunner.
+![Image](https://github.com/user-attachments/assets/9e9017c5-aa11-433b-be63-6c5b6d399e94)
 
-### Crazyflie 1.0 support
+## Description
+This repository was created by undergraduate researchers: Minwoo Park and Niko Tambornini and advisor: Dr.Siavash Farzan. This project is apart of Dr.Siavash Farzan's Cal Poly Cyber-Physical Systems Lab or CPSquare Lab under the title: Experimental Framework for Multi-Agent Coordination and Distributed Localization in Micro-UAVs. Furthermore, this firmware is a modification of the Bitcraze firmware for the Crazyflie platform found in: https://github.com/bitcraze/crazyflie-firmware. 
 
-The 2017.06 release was the last release with Crazyflie 1.0 support. If you want
-to play with the Crazyflie 1.0 and modify the code, please clone this repo and
-branch off from the 2017.06 tag.
-
-## Building and Flashing
-See the [building and flashing instructions](https://github.com/bitcraze/crazyflie-firmware/blob/master/docs/building-and-flashing/build.md) in the github docs folder.
-
-
-## Official Documentation
-
-Check out the [Bitcraze crazyflie-firmware documentation](https://www.bitcraze.io/documentation/repository/crazyflie-firmware/master/) on our website.
-
-## Generated documentation
-
-The easiest way to generate the API documentation is to use the [toolbelt](https://github.com/bitcraze/toolbelt)
-
-```tb build-docs```
-
-and to view it in a web page
-
-```tb docs```
-
-## Contribute
-Go to the [contribute page](https://www.bitcraze.io/contribute/) on our website to learn more.
-
-### Test code for contribution
-
-To run the tests please have a look at the [unit test documentation](https://www.bitcraze.io/documentation/repository/crazyflie-firmware/master/development/unit_testing/).
-
-## License
-
-The code is licensed under LGPL-3.0
+To view other research or work produced by CPSquare, please visit: https://sfarzan.com/index.html.
