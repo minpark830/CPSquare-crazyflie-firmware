@@ -9,4 +9,32 @@ To view other research or work produced by CPSquare, please visit: https://sfarz
 
 ## Directions
 
+# Prerequisite Software Installation
+
+1. Install Python 3.11.9 
+
+2. Install cflib python package utilizing pip 
+    - cflib version is 0.1.27
+
+3. Setup Crazyradio 2.0
+    - firmware is crazyradio2-CRPA-emulation-1.1.uf2
+
+4. Install Zadig 2.9 
+    - install libusb v1.4.0.0 driver
+
+5. Install cfclient (run using python -m cfclient.gui)
+    - pip install cfclient
+      
+# Firmware Compilation
 In the examples folder (/examples), there are 4 individual folders that hold the custom firmware designed for both follower and leader drones. These folders include: app_follower, app_follower_tester, app_leader, and app_multiranger. 
+
+Command Line Commands to compile firmware:
+
+1. make clean
+2. make -j$(nproc)
+3. make cload
+
+
+# Leader drone firmware
+
+Found in the app_leader folder (/examples/app_leader), the src folder (/examples/app_leader/src) is where the commands 
