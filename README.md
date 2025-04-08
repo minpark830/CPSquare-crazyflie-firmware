@@ -8,3 +8,5 @@ This repository was created by undergraduate researchers: Minwoo Park and Niko T
 To view other research or work produced by CPSquare, please visit: https://sfarzan.com/index.html.
 
 ## Directions
+
+In the examples folder (/examples), there are 4 individual folders that hold the custom firmware designed for both follower and leader drones. These folders include: app_follower, app_follower_tester, app_leader, and app_multiranger. 
