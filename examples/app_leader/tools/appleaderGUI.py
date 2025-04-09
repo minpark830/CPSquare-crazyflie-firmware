@@ -61,7 +61,12 @@ class App:
         square_form_button.pack(pady=10)
 
         # Create a Matplotlib figure
-        self.fig, self.ax = plt.subplots()
+        # self.fig, self.ax = plt.subplots()
+        self.fig = plt.figure()
+        self.ax = self.fig.add_subplot(111, projection='3d')
+        self.ax.set_xlabel('X Axis [m]')
+        self.ax.set_ylabel('Y Axis [m]')
+        self.ax.set_zlabel('Z Axis [m]')
 
         # Create a canvas widget for the figure
         self.canvas = FigureCanvasTkAgg(self.fig, master=root)
@@ -94,7 +99,7 @@ class App:
     def app_packet_received(self, data):
         (x, y, z) = struct.unpack("<fff", data)
         self.receivedData = True
-        self.ax.plot(x,y, marker = 'x', color='b', label='leader')
+        self.ax.plot_surface(x,y,z, marker = 'x', color='b', label='leader')
         if(self.firstTime):
             self.ax.legend()
             self.firstTime = False
