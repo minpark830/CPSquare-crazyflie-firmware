@@ -28,11 +28,13 @@
 
 // define the ids of each node in the network
 #define NETWORK_TOPOLOGY {.size = 4, .devices_ids = {0, 1, 2, 3} } // Maximum size of network is 20 by default
- 
+
+// define received packet for app channel
 struct testPacketRX {
   int command;
 } __attribute__((packed));
- 
+
+// define transmit packet for app channel
 struct testPacketTX {
   float x;
   float y;
@@ -42,20 +44,16 @@ struct testPacketTX {
 // static void setHoverSetpoint(setpoint_t *setpoint, float vx, float vy, float z, float yawrate){
 //   setpoint->mode.z = modeAbs;
 //   setpoint->position.z = z;
- 
- 
 //   setpoint->mode.yaw = modeVelocity;
 //   setpoint->attitudeRate.yaw = yawrate;
- 
- 
 //   setpoint->mode.x = modeVelocity;
 //   setpoint->mode.y = modeVelocity;
 //   setpoint->velocity.x = vx;
 //   setpoint->velocity.y = vy;
-
 //   setpoint->velocity_body = true;
 // }
 
+// define hover setpoint function to be based off positional values (x,y,z, yaw)
 static void setHoverSetpoint(setpoint_t *setpoint, float x, float y, float z, float yaw){
 	setpoint->mode.z = modeAbs;
 	setpoint->position.z = z;
@@ -72,6 +70,20 @@ static void setHoverSetpoint(setpoint_t *setpoint, float x, float y, float z, fl
   
 }
 
+// define transmit data packet function based off positional values (FlowX, FlowY, FlowZ)
+static bool transmitData(uint8_t flowDeckOn, struct testPacketTX txPacket, logVarId_t idFlowX, logVarId_t idFlowY, logVarId_t idFlowZ){
+  if(flowDeckOn){
+    txPacket.x = logGetFloat(idFlowX);
+    txPacket.y = logGetFloat(idFlowY);
+    txPacket.z = logGetFloat(idFlowZ);
+
+    appchannelSendDataPacketBlock(&txPacket, sizeof(txPacket)); 
+  } else{
+    return false;
+  }
+  return true;
+}
+
 typedef enum {
   init,
   standby,
@@ -82,6 +94,7 @@ typedef enum {
   nothing,
   start,
   square,
+  stop,
   land
 } Command;
 
@@ -126,13 +139,14 @@ void appMain() {
         
         if(command == start){
           // prepare the transmit packet and send back to computer
-          if(flowDeckOn){
-            txPacket.x = logGetFloat(idFlowX);
-            txPacket.y = logGetFloat(idFlowY);
-            txPacket.z = logGetFloat(idFlowZ);
-            
-            appchannelSendDataPacketBlock(&txPacket, sizeof(txPacket));
-          }
+
+          // if(flowDeckOn){
+          //   txPacket.x = logGetFloat(idFlowX);
+          //   txPacket.y = logGetFloat(idFlowY);
+          //   txPacket.z = logGetFloat(idFlowZ);
+          //   appchannelSendDataPacketBlock(&txPacket, sizeof(txPacket));
+          // }
+          transmitData(flowDeckOn, txPacket, idFlowX, idFlowY, idFlowZ);
           state = standby;
           setHoverSetpoint(&setpoint, 0, 0, 0.5, 0);
           commanderSetSetpoint(&setpoint, 3);
@@ -150,13 +164,22 @@ void appMain() {
 
         if(command == square){
           state = square;
-          if(flowDeckOn){
-            txPacket.x = logGetFloat(idFlowX);
-            txPacket.y = logGetFloat(idFlowY);
-            txPacket.z = logGetFloat(idFlowZ);
-              
-            appchannelSendDataPacketBlock(&txPacket, sizeof(txPacket)); 
-          }
+          // if(flowDeckOn){
+          //   txPacket.x = logGetFloat(idFlowX);
+          //   txPacket.y = logGetFloat(idFlowY);
+          //   txPacket.z = logGetFloat(idFlowZ); 
+          //   appchannelSendDataPacketBlock(&txPacket, sizeof(txPacket)); 
+          // }
+          transmitData(flowDeckOn, txPacket, idFlowX, idFlowY, idFlowZ);
+        } else if(command == stop){
+          state = stop;
+          // if(flowDeckOn){
+          //   txPacket.x = logGetFloat(idFlowX);
+          //   txPacket.y = logGetFloat(idFlowY);
+          //   txPacket.z = logGetFloat(idFlowZ);
+          //   appchannelSendDataPacketBlock(&txPacket, sizeof(txPacket)); 
+          // }
+          transmitData(flowDeckOn, txPacket, idFlowX, idFlowY, idFlowZ);
         }
       }
 
@@ -165,13 +188,13 @@ void appMain() {
       setHoverSetpoint(&setpoint, 0.2, 0.2, 0.5, 0);
       commanderSetSetpoint(&setpoint, 3);
 
-      if(flowDeckOn){
-        txPacket.x = logGetFloat(idFlowX);
-        txPacket.y = logGetFloat(idFlowY);
-        txPacket.z = logGetFloat(idFlowZ);
-          
-        appchannelSendDataPacketBlock(&txPacket, sizeof(txPacket)); 
-      }
+      // if(flowDeckOn){
+      //   txPacket.x = logGetFloat(idFlowX);
+      //   txPacket.y = logGetFloat(idFlowY);
+      //   txPacket.z = logGetFloat(idFlowZ);
+      //   appchannelSendDataPacketBlock(&txPacket, sizeof(txPacket)); 
+      // }
+      transmitData(flowDeckOn, txPacket, idFlowX, idFlowY, idFlowZ);
 
 
     } else{
