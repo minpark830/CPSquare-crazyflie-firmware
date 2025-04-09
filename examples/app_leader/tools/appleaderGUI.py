@@ -46,19 +46,30 @@ class App:
         root.img = img_tk
 
         self.leader_label = tk.Label(root, text=f"Current Leader: {self.currentLeader}", font=("Arial", 14))
-        self.leader_label.pack(pady=20)
+        self.leader_label.pack()
 
-        connect_button = tk.Button(root, text="Connect a Leader", command=self.connect_to_crazyflie)
-        connect_button.pack(pady=10)
+        # Leader Buttons
+        leader_frame = tk.Frame(root)
+        leader_frame.pack(pady=20)
 
-        disconnect_button = tk.Button(root, text="Disconnect Leader", command=self.disconnect_crazyflie)
-        disconnect_button.pack(pady=10)
+        connect_button = tk.Button(leader_frame, text="Connect a Leader", command=self.connect_to_crazyflie)
+        connect_button.pack(side='left', padx=10)
 
-        start_button = tk.Button(root, text="Send Start Command", command=self.sendStartCommand)
-        start_button.pack(pady=10)
+        disconnect_button = tk.Button(leader_frame, text="Disconnect Leader", command=self.disconnect_crazyflie)
+        disconnect_button.pack(side='left', padx=10)
 
-        square_form_button = tk.Button(root, text="Send Square Formation Command", command=self.sendSquareCommand)
-        square_form_button.pack(pady=10)
+        command_label = tk.Label(root, text=f"Available Commands", font=("Arial", 14))
+        command_label.pack()
+        
+        # Commands
+        command_frame = tk.Frame(root)
+        command_frame.pack(pady=20)
+
+        start_button = tk.Button(command_frame, text="Send Start Command", command=self.sendStartCommand)
+        start_button.pack(side='left', padx=10)
+
+        square_form_button = tk.Button(command_frame, text="Send Square Formation Command", command=self.sendSquareCommand)
+        square_form_button.pack(side='left', padx=10)
 
         # Create a Matplotlib figure
         # self.fig, self.ax = plt.subplots()
