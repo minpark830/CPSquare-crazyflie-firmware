@@ -12,6 +12,7 @@
 #include "commander.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "estimator_kalman.h"
 
 #include "radiolink.h"
 #include "configblock.h"
@@ -124,6 +125,9 @@ void appMain() {
   logVarId_t idFlowY = logGetVarId("stateEstimate", "y");
   logVarId_t idFlowZ = logGetVarId("stateEstimate", "z");
   paramVarId_t idFlowDeck = paramGetVarId("deck", "bcFlow2");
+
+  // reset kalman filter
+  estimatorKalmanInit();
 
   while(1) {
 
