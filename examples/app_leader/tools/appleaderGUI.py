@@ -99,7 +99,7 @@ class App:
     def app_packet_received(self, data):
         (x, y, z) = struct.unpack("<fff", data)
         self.receivedData = True
-        self.ax.plot_surface(x,y,z, marker = 'x', color='b', label='leader')
+        self.ax.scatter(x,y,z, marker = 'x', color='b', label='leader')
         if(self.firstTime):
             self.ax.legend()
             self.firstTime = False
@@ -122,7 +122,7 @@ class App:
             self.leader_label.config(text=f"Current Leader: {self.currentLeader}")
             self.cf.open_link(available[0][0])
         # if (1):
-        #     self.cf.open_link('radio://0/80/2M/E7E7E7E7E6')
+        #     self.cf.open_link('radio://0/80/2M/E7E7E7E7E8')
         else:
             print("Error", "No Crazyflies found, cannot run example")
 
