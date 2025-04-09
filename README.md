@@ -30,9 +30,9 @@ In the examples folder (/examples), there are 4 individual folders that hold the
 
 Command Line Commands to compile firmware:
 
-1. '''make clean'''
-2. '''make -j$(nproc)'''
-3. '''make cload'''
+1. ```make clean```
+2. ```make -j$(nproc)```
+3. ```make cload```
 
 
 #### Leader drone firmware
