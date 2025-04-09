@@ -74,6 +74,43 @@ class App:
         square_form_button = tk.Button(command_frame, text="Send Square Formation Command", command=self.sendSquareCommand)
         square_form_button.pack(side='left', padx=10)
 
+        rhombus_form_button = tk.Button(command_frame, text="Send Rhombus Formation Command", command=self.sendSquareCommand)
+        rhombus_form_button.pack(side='left', padx=10)
+
+        triangle_form_button = tk.Button(command_frame, text="Send Triangle Formation Command", command=self.sendSquareCommand)
+        triangle_form_button.pack(side='left', padx=10)
+
+        control_label = tk.Label(root, text=f"Available Controls", font=("Arial", 14))
+        control_label.pack()
+        
+        # Controls
+        control_frame = tk.Frame(root)
+        control_frame.pack(pady=20)
+
+        control_font = ("Arial", 15)  # Big font for arrow symbols
+        control_size = 4             # Width and height in character units
+
+        # Up Arrow
+        up_button = tk.Button(control_frame, text="↑", font=control_font, width=control_size)
+        up_button.grid(row=0, column=1, padx=10, pady=10)
+
+        # Left Arrow
+        left_button = tk.Button(control_frame, text="←", font=control_font, width=control_size)
+        left_button.grid(row=1, column=0, padx=10, pady=10)
+
+        # Right Arrow
+        right_button = tk.Button(control_frame, text="→", font=control_font, width=control_size)
+        right_button.grid(row=1, column=2, padx=10, pady=10)
+
+        # Down Arrow
+        down_button = tk.Button(control_frame, text="↓", font=control_font, width=control_size)
+        down_button.grid(row=2, column=1, padx=10, pady=10)
+
+        # Optional: Center Stop Button
+        stop_button = tk.Button(control_frame, text="■", font=control_font, width=control_size)
+        stop_button.grid(row=1, column=1)
+
+
         # Create a Matplotlib figure
         # self.fig, self.ax = plt.subplots()
         self.fig = plt.figure()
