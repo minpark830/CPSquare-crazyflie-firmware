@@ -87,14 +87,14 @@ static bool transmitData(uint8_t flowDeckOn, testPacketTX *txPacket, logVarId_t 
 typedef enum {
   init,
   standby,
-  square_formation
+  square_formation,
+  landing
 } State;
 
 typedef enum {
   nothing,
   start,
   square,
-  stop,
   land
 } Command;
 
@@ -171,8 +171,8 @@ void appMain() {
           //   appchannelSendDataPacketBlock(&txPacket, sizeof(txPacket)); 
           // }
           transmitData(flowDeckOn, &txPacket, idFlowX, idFlowY, idFlowZ);
-        } else if(command == stop){
-          state = stop;
+        } else if(command == land){
+          state = landing;
           // if(flowDeckOn){
           //   txPacket.x = logGetFloat(idFlowX);
           //   txPacket.y = logGetFloat(idFlowY);
@@ -195,10 +195,24 @@ void appMain() {
       //   appchannelSendDataPacketBlock(&txPacket, sizeof(txPacket)); 
       // }
       transmitData(flowDeckOn, &txPacket, idFlowX, idFlowY, idFlowZ);
+      if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), 0)) {
+        command = (int)rxPacket.command;
+        DEBUG_PRINT("Command received: %d\n", command);
 
+        if(command == land){
+          state = landing;
+          transmitData(flowDeckOn, &txPacket, idFlowX, idFlowY, idFlowZ);
+        }
+      }
+
+    } else if(state == landing){
+      vTaskDelay(10);
+      setHoverSetpoint(&setpoint, logGetFloat(idFlowX), logGetFloat(idFlowY), 0.1, 0);
+      commanderSetSetpoint(&setpoint, 3);
+      state = init;
 
     } else{
-      DEBUG_PRINT("nothing happening");
+      DEBUG_PRINT("Nothing happening");
       vTaskDelay(10);
       memset(&setpoint, 0, sizeof(setpoint_t));
       commanderSetSetpoint(&setpoint, 3);

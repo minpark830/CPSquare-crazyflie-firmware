@@ -52,8 +52,11 @@ class App:
         leader_frame = tk.Frame(root)
         leader_frame.pack(pady=20)
 
-        connect_button = tk.Button(leader_frame, text="Connect a Leader", command=self.connect_to_crazyflie)
+        connect_button = tk.Button(leader_frame, text="Connect Leader", command=self.connect_to_crazyflie)
         connect_button.pack(side='left', padx=10)
+
+        land_button = tk.Button(leader_frame, text="Land Leader", command=self.land_crazyflie)
+        land_button.pack(side='left', padx=10)
 
         disconnect_button = tk.Button(leader_frame, text="Disconnect Leader", command=self.disconnect_crazyflie)
         disconnect_button.pack(side='left', padx=10)
@@ -142,25 +145,27 @@ class App:
         self.leader_label.config(text=f"Current Leader: {self.currentLeader}")
         self.cf.close_link()
 
+    def land_crazyflie(self):
+        self.receivedData = False
+        self.send_command(3)
+        print("Sent Land Command")
+        
+    def send_command(self, command):
+        data = struct.pack("<i", command)
+        self.cf.appchannel.send_packet(data)
+
     def sendStartCommand(self):
         
         self.receivedData = False
 
         while(not self.receivedData):
-            data = struct.pack("<i", 1)
-            self.cf.appchannel.send_packet(data)
-            print("Sent start command")
+            self.send_command(1)
+            print("Sent Start command")
             time.sleep(1)
     
     def sendSquareCommand(self):
-
-        self.receivedData = False
-
-        while(not self.receivedData):
-            data = struct.pack("<i", 2)
-            self.cf.appchannel.send_packet(data)
-            print("Sent start command")
-            time.sleep(1)
+        self.send_command(2)
+        print("Sent Square Formation command")
 
 if __name__ == '__main__':
     root = tk.Tk()
