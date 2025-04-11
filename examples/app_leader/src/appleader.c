@@ -136,6 +136,8 @@ void appMain() {
     if(state==init) {
       // wait for start command from the computer 
       if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), APPCHANNEL_WAIT_FOREVER)) {
+        // reset kalman filter
+        estimatorKalmanInit();
         
         // print out command 
         command = (int)rxPacket.command;
@@ -199,6 +201,7 @@ void appMain() {
       //   appchannelSendDataPacketBlock(&txPacket, sizeof(txPacket)); 
       // }
       transmitData(flowDeckOn, &txPacket, idFlowX, idFlowY, idFlowZ);
+
       if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), 0)) {
         command = (int)rxPacket.command;
         DEBUG_PRINT("Command received: %d\n", command);
