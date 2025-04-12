@@ -136,9 +136,10 @@ void appMain() {
       DEBUG_PRINT("Current State: init");
 
       // wait for start command from the computer 
+      // note it is important to keep this one as APPCHANNEL_WAIT_FOREVER for some reason
       if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), APPCHANNEL_WAIT_FOREVER)) {
 
-        DEBUG_PRINT("INSIDE THIS IF");
+        command = (int)rxPacket.command;
 
         // reset kalman filter
         estimatorKalmanInit();
