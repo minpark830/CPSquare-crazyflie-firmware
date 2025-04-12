@@ -114,8 +114,6 @@ static Command command = nothing;
 void appMain() {
 
   vTaskDelay(3000);
-
-  DEBUG_PRINT("Waiting for activation ...\n");
  
   static testPacketRX rxPacket;
   static testPacketTX txPacket;
@@ -134,24 +132,19 @@ void appMain() {
     uint8_t flowDeckOn = paramGetUint(idFlowDeck);
 
     if(state==init) {
+
+      DEBUG_PRINT("Current State: init");
+
       // wait for start command from the computer 
       if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), APPCHANNEL_WAIT_FOREVER)) {
+
+        DEBUG_PRINT("INSIDE THIS IF");
+
         // reset kalman filter
         estimatorKalmanInit();
         
-        // print out command 
-        command = (int)rxPacket.command;
-        DEBUG_PRINT("Command received: %d\n", command);
-        
         if(command == start){
           // prepare the transmit packet and send back to computer
-
-          // if(flowDeckOn){
-          //   txPacket.x = logGetFloat(idFlowX);
-          //   txPacket.y = logGetFloat(idFlowY);
-          //   txPacket.z = logGetFloat(idFlowZ);
-          //   appchannelSendDataPacketBlock(&txPacket, sizeof(txPacket));
-          // }
           transmitData(flowDeckOn, &txPacket, idFlowX, idFlowY, idFlowZ);
           state = standby;
           setHoverSetpoint(&setpoint, 0, 0, 0.5, 0);
@@ -159,6 +152,9 @@ void appMain() {
         }
       }
     } else if(state == standby){
+
+      DEBUG_PRINT("Current State: standby");
+
       // it seems delay is required from the crazyflie from crashing
       vTaskDelay(10);
       setHoverSetpoint(&setpoint, 0, 0, 0.5, 0);
@@ -170,36 +166,21 @@ void appMain() {
 
         if(command == square){
           state = square;
-          // if(flowDeckOn){
-          //   txPacket.x = logGetFloat(idFlowX);
-          //   txPacket.y = logGetFloat(idFlowY);
-          //   txPacket.z = logGetFloat(idFlowZ); 
-          //   appchannelSendDataPacketBlock(&txPacket, sizeof(txPacket)); 
-          // }
           transmitData(flowDeckOn, &txPacket, idFlowX, idFlowY, idFlowZ);
         } else if(command == land){
           state = landing;
-          // if(flowDeckOn){
-          //   txPacket.x = logGetFloat(idFlowX);
-          //   txPacket.y = logGetFloat(idFlowY);
-          //   txPacket.z = logGetFloat(idFlowZ);
-          //   appchannelSendDataPacketBlock(&txPacket, sizeof(txPacket)); 
-          // }
           transmitData(flowDeckOn, &txPacket, idFlowX, idFlowY, idFlowZ);
         }
       }
 
     } else if(state == square_formation){ 
+
+      DEBUG_PRINT("Current State: square_formation");
+
       vTaskDelay(10);
       setHoverSetpoint(&setpoint, 0.2, 0.2, 0.5, 0);
       commanderSetSetpoint(&setpoint, 3);
 
-      // if(flowDeckOn){
-      //   txPacket.x = logGetFloat(idFlowX);
-      //   txPacket.y = logGetFloat(idFlowY);
-      //   txPacket.z = logGetFloat(idFlowZ);
-      //   appchannelSendDataPacketBlock(&txPacket, sizeof(txPacket)); 
-      // }
       transmitData(flowDeckOn, &txPacket, idFlowX, idFlowY, idFlowZ);
 
       if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), 0)) {
@@ -213,13 +194,18 @@ void appMain() {
       }
 
     } else if(state == landing){
+
+      DEBUG_PRINT("Current State: landing");
+
       vTaskDelay(10);
       setHoverSetpoint(&setpoint, logGetFloat(idFlowX), logGetFloat(idFlowY), 0.1, 0);
       commanderSetSetpoint(&setpoint, 3);
       state = init;
 
     } else{
+
       DEBUG_PRINT("Nothing happening");
+
       vTaskDelay(10);
       memset(&setpoint, 0, sizeof(setpoint_t));
       commanderSetSetpoint(&setpoint, 3);

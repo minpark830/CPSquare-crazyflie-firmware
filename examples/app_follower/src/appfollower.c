@@ -96,23 +96,6 @@ void p2pcallbackHandler(P2PPacket *p){
 	}
 }
 
-
-// static void setHoverSetpoint(setpoint_t *setpoint, float x, float y, float z, float yaw){
-// 	setpoint->mode.z = modeAbs;
-// 	setpoint->position.z = z;
-   
-   
-// 	setpoint->mode.yaw = modeAbs;
-// 	setpoint->attitude.yaw = yaw;
-   
-   
-// 	setpoint->mode.x = modeAbs;
-// 	setpoint->mode.y = modeAbs;
-// 	setpoint->position.x = x;
-// 	setpoint->position.y = y;
-  
-//   }
-
 void appMain(){
 
 	logVarId_t idFlowX = logGetVarId("stateEstimate", "x");
@@ -138,6 +121,9 @@ void appMain(){
 	float currentY;
 	float currentZ;
 
+	// reset kalman filter
+	estimatorKalmanInit();
+
 	while(1){
 
 		uint8_t flowDeckOn = paramGetUint(idFlowDeck);
@@ -148,7 +134,7 @@ void appMain(){
 			if(dtrGetPacket(&receivedPacket, portMAX_DELAY)){
 				DEBUG_PRINT("Received data from %d : \n",receivedPacket.sourceId);
 				
-				
+				receivedPacket.data[0]
 
 			} 
 			// regardless of if command is sent or not send back current position to 

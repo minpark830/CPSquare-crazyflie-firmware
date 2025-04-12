@@ -68,16 +68,16 @@ class App:
         command_frame = tk.Frame(root)
         command_frame.pack(pady=20)
 
-        start_button = tk.Button(command_frame, text="Send Start Command", command=self.sendStartCommand)
+        start_button = tk.Button(command_frame, text="Start Command", command=self.sendStartCommand)
         start_button.pack(side='left', padx=10)
 
-        square_form_button = tk.Button(command_frame, text="Send Square Formation Command", command=self.sendSquareCommand)
+        square_form_button = tk.Button(command_frame, text="Square Formation Command", command=self.sendSquareCommand)
         square_form_button.pack(side='left', padx=10)
 
-        rhombus_form_button = tk.Button(command_frame, text="Send Rhombus Formation Command", command=self.sendSquareCommand)
+        rhombus_form_button = tk.Button(command_frame, text="Rhombus Formation Command", command=self.sendSquareCommand)
         rhombus_form_button.pack(side='left', padx=10)
 
-        triangle_form_button = tk.Button(command_frame, text="Send Triangle Formation Command", command=self.sendSquareCommand)
+        triangle_form_button = tk.Button(command_frame, text="Triangle Formation Command", command=self.sendSquareCommand)
         triangle_form_button.pack(side='left', padx=10)
 
         control_label = tk.Label(root, text=f"Available Controls", font=("Arial", 14))
@@ -192,13 +192,14 @@ class App:
         self.cf.appchannel.send_packet(data)
 
     def sendStartCommand(self):
-        
-        self.receivedData = False
+        self.send_command(1)
+        print("Sent Start command")
+        # self.receivedData = False
 
-        while(not self.receivedData):
-            self.send_command(1)
-            print("Sent Start command")
-            time.sleep(1)
+        # while(not self.receivedData):
+        #     self.send_command(1)
+        #     print("Sent Start command")
+        #     time.sleep(1)
     
     def sendSquareCommand(self):
         self.send_command(2)
