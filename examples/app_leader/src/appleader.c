@@ -149,7 +149,7 @@ void appMain() {
 
     if(state==init) {
 
-      DEBUG_PRINT("Current State: init");
+      DEBUG_PRINT("Current State: init\n");
 
       // wait for start command from the computer 
       // note it is important to keep this one as APPCHANNEL_WAIT_FOREVER for some reason
@@ -170,7 +170,7 @@ void appMain() {
       }
     } else if(state == standby){
 
-      DEBUG_PRINT("Current State: standby");
+      DEBUG_PRINT("Current State: standby\n");
 
       // it seems delay is required from the crazyflie from crashing
       vTaskDelay(10);
@@ -191,7 +191,7 @@ void appMain() {
 
     } else if(state == square_formation){ 
 
-      DEBUG_PRINT("Current State: square_formation");
+      DEBUG_PRINT("Current State: square_formation\n");
 
       vTaskDelay(10);
       setHoverSetpoint(&setpoint, 0.2, 0.2, 0.5, 0);
@@ -210,7 +210,7 @@ void appMain() {
 
     } else if(state == landing){
 
-      DEBUG_PRINT("Current State: landing");
+      DEBUG_PRINT("Current State: landing\n");
 
       vTaskDelay(10);
       setHoverSetpoint(&setpoint, logGetFloat(idFlowX), logGetFloat(idFlowY), 0.1, 0);
@@ -219,7 +219,7 @@ void appMain() {
 
     } else{
 
-      DEBUG_PRINT("ERROR WITH STATE HANDLING");
+      DEBUG_PRINT("ERROR WITH STATE HANDLING\n");
 
       vTaskDelay(10);
       memset(&setpoint, 0, sizeof(setpoint_t));

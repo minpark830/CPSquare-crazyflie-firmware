@@ -39,17 +39,17 @@ class App:
         img_tk = ImageTk.PhotoImage(img_resized)
     
         # Create a label to hold the image
-        logo_label = tk.Label(root, image=img_tk)
+        logo_label = tk.Label(root, image=img_tk, bg='white')
         logo_label.pack(pady=20)
 
         # IMPORTANT DONT DELETE need as reference for 
         root.img = img_tk
 
-        self.leader_label = tk.Label(root, text=f"Current Leader: {self.currentLeader}", font=("Arial", 14))
+        self.leader_label = tk.Label(root, text=f"Current Leader: {self.currentLeader}", font=("Arial", 14), bg='white')
         self.leader_label.pack()
 
         # Leader Buttons
-        leader_frame = tk.Frame(root)
+        leader_frame = tk.Frame(root, bg='white')
         leader_frame.pack(pady=20)
 
         connect_button = tk.Button(leader_frame, text="Connect Leader", command=self.connect_to_crazyflie)
@@ -61,11 +61,11 @@ class App:
         disconnect_button = tk.Button(leader_frame, text="Disconnect Leader", command=self.disconnect_crazyflie)
         disconnect_button.pack(side='left', padx=10)
 
-        command_label = tk.Label(root, text=f"Available Commands", font=("Arial", 14))
+        command_label = tk.Label(root, text=f"Available Commands", font=("Arial", 14), bg='white')
         command_label.pack()
         
         # Commands
-        command_frame = tk.Frame(root)
+        command_frame = tk.Frame(root, bg='white')
         command_frame.pack(pady=20)
 
         start_button = tk.Button(command_frame, text="Start Command", command=self.sendStartCommand)
@@ -80,11 +80,11 @@ class App:
         triangle_form_button = tk.Button(command_frame, text="Triangle Formation Command", command=self.sendSquareCommand)
         triangle_form_button.pack(side='left', padx=10)
 
-        control_label = tk.Label(root, text=f"Available Controls", font=("Arial", 14))
+        control_label = tk.Label(root, text=f"Available Controls", font=("Arial", 14), bg='white')
         control_label.pack()
         
         # Controls
-        control_frame = tk.Frame(root)
+        control_frame = tk.Frame(root, bg='white')
         control_frame.pack(pady=20)
 
         control_font = ("Arial", 15)  # Big font for arrow symbols
@@ -148,9 +148,15 @@ class App:
         """Callback when the Crazyflie is disconnected (called in all cases)"""
 
     def app_packet_received(self, data):
-        (x, y, z) = struct.unpack("<fff", data)
+        (id, x, y, z) = struct.unpack("<ifff", data)
         self.receivedData = True
-        self.ax.scatter(x,y,z, marker = 'x', color='b', label='leader')
+        match id:
+            case 321:
+                # leader
+                self.ax.scatter(x,y,z, marker = 'x', color='b', label='leader')
+            case 320:
+                # follower
+                self.ax.scatter(x,y,z, marker = 'x', color='r', label='follower 1')
         if(self.firstTime):
             self.ax.legend()
             self.firstTime = False
@@ -207,5 +213,6 @@ class App:
 
 if __name__ == '__main__':
     root = tk.Tk()
+    root.configure(bg='white')
     app = App(root)
     root.mainloop()
