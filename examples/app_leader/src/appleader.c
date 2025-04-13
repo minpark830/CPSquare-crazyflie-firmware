@@ -30,6 +30,12 @@
 // define the ids of each node in the network
 #define NETWORK_TOPOLOGY {.size = 4, .devices_ids = {0, 1, 2, 3} } // Maximum size of network is 20 by default
 
+// store current id of drone in P2P DTR network
+static uint8_t my_id;
+
+// store defined network topology and ids in the network
+static dtrTopology topology = NETWORK_TOPOLOGY;
+
 // define received packet for app channel
 typedef struct testPacketRX_s {
   int command;
@@ -37,6 +43,7 @@ typedef struct testPacketRX_s {
 
 // define transmit packet for app channel
 typedef struct testPacketTX_s {
+  int id;
   float x;
   float y;
   float z;
@@ -72,8 +79,9 @@ static void setHoverSetpoint(setpoint_t *setpoint, float x, float y, float z, fl
 }
 
 // define transmit data packet function based off positional values (FlowX, FlowY, FlowZ)
-static bool transmitData(uint8_t flowDeckOn, testPacketTX *txPacket, logVarId_t idFlowX, logVarId_t idFlowY, logVarId_t idFlowZ){
+static bool transmitData(uint8_t flowDeckOn, testPacketTX *txPacket, int id, logVarId_t idFlowX, logVarId_t idFlowY, logVarId_t idFlowZ){
   if(flowDeckOn){
+    txPacket->id = id;
     txPacket->x = logGetFloat(idFlowX);
     txPacket->y = logGetFloat(idFlowY);
     txPacket->z = logGetFloat(idFlowZ);
@@ -124,6 +132,14 @@ void appMain() {
   logVarId_t idFlowZ = logGetVarId("stateEstimate", "z");
   paramVarId_t idFlowDeck = paramGetVarId("deck", "bcFlow2");
 
+  // set self id for network
+	my_id = dtrGetSelfId();
+
+	// enable P2P DTR network
+	dtrEnableProtocol(topology);
+
+  DEBUG_PRINT("Current ID: %d\n", my_id);
+
   // reset kalman filter
   estimatorKalmanInit();
 
@@ -146,7 +162,7 @@ void appMain() {
         
         if(command == start){
           // prepare the transmit packet and send back to computer
-          transmitData(flowDeckOn, &txPacket, idFlowX, idFlowY, idFlowZ);
+          transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
           state = standby;
           setHoverSetpoint(&setpoint, 0, 0, 0.5, 0);
           commanderSetSetpoint(&setpoint, 3);
@@ -163,14 +179,13 @@ void appMain() {
 
       if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), 0)) {
         command = (int)rxPacket.command;
-        DEBUG_PRINT("Command received: %d\n", command);
 
         if(command == square){
           state = square;
-          transmitData(flowDeckOn, &txPacket, idFlowX, idFlowY, idFlowZ);
+          transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
         } else if(command == land){
           state = landing;
-          transmitData(flowDeckOn, &txPacket, idFlowX, idFlowY, idFlowZ);
+          transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
         }
       }
 
@@ -182,15 +197,14 @@ void appMain() {
       setHoverSetpoint(&setpoint, 0.2, 0.2, 0.5, 0);
       commanderSetSetpoint(&setpoint, 3);
 
-      transmitData(flowDeckOn, &txPacket, idFlowX, idFlowY, idFlowZ);
+      transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
 
       if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), 0)) {
         command = (int)rxPacket.command;
-        DEBUG_PRINT("Command received: %d\n", command);
 
         if(command == land){
           state = landing;
-          transmitData(flowDeckOn, &txPacket, idFlowX, idFlowY, idFlowZ);
+          transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
         }
       }
 
@@ -205,7 +219,7 @@ void appMain() {
 
     } else{
 
-      DEBUG_PRINT("Nothing happening");
+      DEBUG_PRINT("ERROR WITH STATE HANDLING");
 
       vTaskDelay(10);
       memset(&setpoint, 0, sizeof(setpoint_t));
