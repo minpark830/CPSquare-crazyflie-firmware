@@ -91,11 +91,11 @@ class App:
         control_size = 4             # Width and height in character units
 
         # Up Arrow
-        up_button = tk.Button(control_frame, text="↑", font=control_font, width=control_size)
+        up_button = tk.Button(control_frame, text="↑", font=control_font, width=control_size, command=self.sendFowardCommand)
         up_button.grid(row=0, column=1, padx=10, pady=10)
 
         # Left Arrow
-        left_button = tk.Button(control_frame, text="←", font=control_font, width=control_size)
+        left_button = tk.Button(control_frame, text="←", font=control_font, width=control_size, command=self.sendLeftCommand)
         left_button.grid(row=1, column=0, padx=10, pady=10)
 
         # Right Arrow
@@ -103,7 +103,7 @@ class App:
         right_button.grid(row=1, column=2, padx=10, pady=10)
 
         # Down Arrow
-        down_button = tk.Button(control_frame, text="↓", font=control_font, width=control_size)
+        down_button = tk.Button(control_frame, text="↓", font=control_font, width=control_size, command=self.sendBackCommand)
         down_button.grid(row=2, column=1, padx=10, pady=10)
 
         # Optional: Center Stop Button
@@ -200,6 +200,18 @@ class App:
     def sendRightCommand(self):
         self.send_command(4)
         print("Sent Right Command")
+    
+    def sendLeftCommand(self):
+        self.send_command(5)
+        print("Sent Left Command")
+
+    def sendBackCommand(self):
+        self.send_command(6)
+        print("Sent Back Command")
+
+    def sendFowardCommand(self):
+        self.send_command(7)
+        print("Sent Foward Command")
 
     def sendStartCommand(self):
         self.send_command(1)

@@ -151,6 +151,9 @@ typedef enum {
   square_formation,
   landing,
   going_right,
+  going_left,
+  going_back,
+  going_forward,
   stopping
 } State;
 
@@ -160,6 +163,9 @@ typedef enum {
   square,
   land,
   right,
+  left,
+  back,
+  forward,
   stop
 } Command;
 
@@ -278,6 +284,60 @@ void appMain() {
 
       vTaskDelay(10);
       setVelocityHoverSetpoint(&setpoint, 0, 0.1, 0, 0);
+      commanderSetSetpoint(&setpoint, 3);
+
+      if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), 0)) {
+        command = (int)rxPacket.command;
+
+        if(command == land){
+          state = landing;
+          transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
+        }
+      }
+
+
+    } else if(state == going_left){
+      
+      DEBUG_PRINT("Current State: going_left\n");
+
+      vTaskDelay(10);
+      setVelocityHoverSetpoint(&setpoint, 0, -0.1, 0, 0);
+      commanderSetSetpoint(&setpoint, 3);
+
+      if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), 0)) {
+        command = (int)rxPacket.command;
+
+        if(command == land){
+          state = landing;
+          transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
+        }
+      }
+
+
+    } else if(state == going_back){
+      
+      DEBUG_PRINT("Current State: going_back\n");
+
+      vTaskDelay(10);
+      setVelocityHoverSetpoint(&setpoint, -0.1, 0, 0, 0);
+      commanderSetSetpoint(&setpoint, 3);
+
+      if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), 0)) {
+        command = (int)rxPacket.command;
+
+        if(command == land){
+          state = landing;
+          transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
+        }
+      }
+
+
+    } else if(state == going_forward){
+      
+      DEBUG_PRINT("Current State: going_forward\n");
+
+      vTaskDelay(10);
+      setVelocityHoverSetpoint(&setpoint, 0.1, 0, 0, 0);
       commanderSetSetpoint(&setpoint, 3);
 
       if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), 0)) {
