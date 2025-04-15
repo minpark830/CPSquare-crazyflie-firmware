@@ -253,6 +253,15 @@ void appMain() {
         } else if(command == right){
           state = going_right;
           transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
+        } else if(command == left){
+          state = going_left;
+          transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
+        } else if(command == back){
+          state = going_back;
+          transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
+        } else if(command == forward){
+          state = going_forward;
+          transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
         } else if(command == land){
           state = landing;
           transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
@@ -283,7 +292,7 @@ void appMain() {
       DEBUG_PRINT("Current State: going_right\n");
 
       vTaskDelay(10);
-      setVelocityHoverSetpoint(&setpoint, 0, 0.1, 0, 0);
+      setVelocityHoverSetpoint(&setpoint, 0, -0.1, 0, 0);
       commanderSetSetpoint(&setpoint, 3);
 
       if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), 0)) {
@@ -301,7 +310,7 @@ void appMain() {
       DEBUG_PRINT("Current State: going_left\n");
 
       vTaskDelay(10);
-      setVelocityHoverSetpoint(&setpoint, 0, -0.1, 0, 0);
+      setVelocityHoverSetpoint(&setpoint, 0, 0.1, 0, 0);
       commanderSetSetpoint(&setpoint, 3);
 
       if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), 0)) {
@@ -338,6 +347,24 @@ void appMain() {
 
       vTaskDelay(10);
       setVelocityHoverSetpoint(&setpoint, 0.1, 0, 0, 0);
+      commanderSetSetpoint(&setpoint, 3);
+
+      if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), 0)) {
+        command = (int)rxPacket.command;
+
+        if(command == land){
+          state = landing;
+          transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
+        }
+      }
+
+
+    } else if (state == stopping){
+
+      DEBUG_PRINT("Current State: stopping\n");
+
+      vTaskDelay(10);
+      setVelocityHoverSetpoint(&setpoint, 0, 0, 0, 0);
       commanderSetSetpoint(&setpoint, 3);
 
       if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), 0)) {
