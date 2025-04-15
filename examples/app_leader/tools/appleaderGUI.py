@@ -99,7 +99,7 @@ class App:
         left_button.grid(row=1, column=0, padx=10, pady=10)
 
         # Right Arrow
-        right_button = tk.Button(control_frame, text="→", font=control_font, width=control_size)
+        right_button = tk.Button(control_frame, text="→", font=control_font, width=control_size, command=self.sendRightCommand)
         right_button.grid(row=1, column=2, padx=10, pady=10)
 
         # Down Arrow
@@ -196,6 +196,10 @@ class App:
     def send_command(self, command):
         data = struct.pack("<i", command)
         self.cf.appchannel.send_packet(data)
+    
+    def sendRightCommand(self):
+        self.send_command(4)
+        print("Sent Right Command")
 
     def sendStartCommand(self):
         self.send_command(1)

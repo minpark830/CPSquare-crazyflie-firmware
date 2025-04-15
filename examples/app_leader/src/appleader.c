@@ -78,6 +78,23 @@ static void setHoverSetpoint(setpoint_t *setpoint, float x, float y, float z, fl
   
 }
 
+// define velocity hover setpoint function based off velocity values
+static void setVelocityHoverSetpoint(setpoint_t *setpoint, float xVeloc, float yVeloc, float zVeloc, float yawVeloc){
+	setpoint->mode.z = modeVelocity;
+	setpoint->velocity.z = zVeloc;
+   
+   
+	setpoint->mode.yaw = modeAbs;
+	setpoint->attitudeRate.yaw = yawVeloc;
+   
+   
+	setpoint->mode.x = modeVelocity;
+	setpoint->mode.y = modeVelocity;
+	setpoint->velocity.x = xVeloc;
+	setpoint->velocity.y = yVeloc;
+  
+}
+
 // define transmit data packet function based off positional values (FlowX, FlowY, FlowZ)
 static bool transmitData(uint8_t flowDeckOn, testPacketTX *txPacket, int id, logVarId_t idFlowX, logVarId_t idFlowY, logVarId_t idFlowZ){
   if(flowDeckOn){
@@ -93,18 +110,57 @@ static bool transmitData(uint8_t flowDeckOn, testPacketTX *txPacket, int id, log
   return true;
 }
 
+// function to load/send transmit packet so it transmit current x, y, z of follower drone
+void sendPackets(float x, float y, float z){
+	dtrPacket transmitSignal;
+	transmitSignal.messageType = DATA_FRAME;
+	transmitSignal.sourceId = my_id;
+
+	// create a array of 3 floats and copy it to transmit packet data
+	float followerPos[3] = {x, y, z};
+	memcpy(transmitSignal.data, followerPos, sizeof(followerPos));
+	
+	transmitSignal.dataSize = sizeof(followerPos);
+	// transmit to leader drone, id of 0 (first to join network)
+	transmitSignal.targetId = 0;
+	transmitSignal.packetSize = DTR_PACKET_HEADER_SIZE + transmitSignal.dataSize;
+
+	bool res;
+	res = dtrSendPacket(&transmitSignal);
+	if (res){
+		DTR_DEBUG_PRINT("Packet sent to DTR protocol\n");
+	}
+	else{
+		DEBUG_PRINT("Packet not sent to DTR protocol\n");
+	}
+}
+
+void p2pcallbackHandler(P2PPacket *p){
+	// If the packet is a DTR service packet, then the handler will handle it.
+	// It returns true if the packet was handled.
+
+    if (!dtrP2PIncomingHandler(p)){
+		// If packet was not handled from DTR , then it is a normal packet 
+		// that user has to handle. 
+	}
+}
+
 typedef enum {
   init,
   standby,
   square_formation,
-  landing
+  landing,
+  going_right,
+  stopping
 } State;
 
 typedef enum {
   nothing,
   start,
   square,
-  land
+  land,
+  right,
+  stop
 } Command;
 
 // store current id of drone in P2P DTR network
@@ -125,6 +181,7 @@ void appMain() {
  
   static testPacketRX rxPacket;
   static testPacketTX txPacket;
+  //static dtrPacket received_packet;
   static setpoint_t setpoint;
 
   logVarId_t idFlowX = logGetVarId("stateEstimate", "x");
@@ -137,6 +194,10 @@ void appMain() {
 
 	// enable P2P DTR network
 	dtrEnableProtocol(topology);
+
+  vTaskDelay(2000);
+  // register the callback function so that the CF can receive packets as well
+	p2pRegisterCB(p2pcallbackHandler);
 
   DEBUG_PRINT("Current ID: %d\n", my_id);
 
@@ -183,6 +244,9 @@ void appMain() {
         if(command == square){
           state = square;
           transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
+        } else if(command == right){
+          state = going_right;
+          transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
         } else if(command == land){
           state = landing;
           transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
@@ -208,8 +272,26 @@ void appMain() {
         }
       }
 
-    } else if(state == landing){
+    } else if(state == going_right){
+      
+      DEBUG_PRINT("Current State: going_right\n");
 
+      vTaskDelay(10);
+      setVelocityHoverSetpoint(&setpoint, 0, 0.1, 0, 0);
+      commanderSetSetpoint(&setpoint, 3);
+
+      if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), 0)) {
+        command = (int)rxPacket.command;
+
+        if(command == land){
+          state = landing;
+          transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
+        }
+      }
+
+
+    } else if(state == landing){
+      // for some reason landing produces a lock and reboot required for supervisor
       DEBUG_PRINT("Current State: landing\n");
 
       vTaskDelay(10);

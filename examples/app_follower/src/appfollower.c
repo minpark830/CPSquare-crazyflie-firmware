@@ -62,7 +62,7 @@ static State state = init;
 //static Command command = nothing;
 
 // function to load/send transmit packet so it transmit current x, y, z of follower drone
-void sendPackets(float x, float y, float z){
+void sendPackets(int id, float x, float y, float z){
 	dtrPacket transmitSignal;
 	transmitSignal.messageType = DATA_FRAME;
 	transmitSignal.sourceId = my_id;
@@ -144,7 +144,7 @@ void appMain(){
 				currentY = logGetFloat(idFlowY);
 				currentZ = logGetFloat(idFlowZ);
 	
-				sendPackets(currentX, currentY, currentZ);
+				sendPackets(my_id, currentX, currentY, currentZ);
 			}
 		} else if(state==standby){
  
