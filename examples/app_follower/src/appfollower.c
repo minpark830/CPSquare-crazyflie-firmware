@@ -62,7 +62,7 @@ static State state = init;
 //static Command command = nothing;
 
 // function to load/send transmit packet so it transmit current x, y, z of follower drone
-void sendPackets(int id, float x, float y, float z){
+void sendPackets(float x, float y, float z){
 	dtrPacket transmitSignal;
 	transmitSignal.messageType = DATA_FRAME;
 	transmitSignal.sourceId = my_id;
@@ -78,12 +78,14 @@ void sendPackets(int id, float x, float y, float z){
 
 	bool res;
 	res = dtrSendPacket(&transmitSignal);
+
 	if (res){
 		DTR_DEBUG_PRINT("Packet sent to DTR protocol\n");
 	}
 	else{
 		DEBUG_PRINT("Packet not sent to DTR protocol\n");
 	}
+	
 }
 
 void p2pcallbackHandler(P2PPacket *p){

@@ -110,29 +110,55 @@ static bool transmitData(uint8_t flowDeckOn, testPacketTX *txPacket, int id, log
   return true;
 }
 
-// function to load/send transmit packet so it transmit current x, y, z of follower drone
-void sendPackets(float x, float y, float z){
+// function to load/send transmit packet so it transmit current x, y, z of leader drone to follower
+void sendLeaderPosition(int targetID, float x, float y, float z){
 	dtrPacket transmitSignal;
 	transmitSignal.messageType = DATA_FRAME;
 	transmitSignal.sourceId = my_id;
 
 	// create a array of 3 floats and copy it to transmit packet data
-	float followerPos[3] = {x, y, z};
-	memcpy(transmitSignal.data, followerPos, sizeof(followerPos));
+	float leaderPos[3] = {x, y, z};
+	memcpy(transmitSignal.data, leaderPos, sizeof(leaderPos));
 	
-	transmitSignal.dataSize = sizeof(followerPos);
-	// transmit to leader drone, id of 0 (first to join network)
-	transmitSignal.targetId = 0;
+	transmitSignal.dataSize = sizeof(leaderPos);
+	// transmit to follower drone
+	transmitSignal.targetId = targetID;
 	transmitSignal.packetSize = DTR_PACKET_HEADER_SIZE + transmitSignal.dataSize;
 
 	bool res;
 	res = dtrSendPacket(&transmitSignal);
 	if (res){
-		DTR_DEBUG_PRINT("Packet sent to DTR protocol\n");
+		DTR_DEBUG_PRINT("Leader Packet sent to DTR protocol\n");
 	}
 	else{
-		DEBUG_PRINT("Packet not sent to DTR protocol\n");
+		DEBUG_PRINT("Leader Packet not sent to DTR protocol\n");
 	}
+
+}
+
+// function to load/send transmit packet so it transmit command to follower drone
+void sendCommandToFollower(int targetID, int command){
+  dtrPacket transmitSignal;
+	transmitSignal.messageType = DATA_FRAME;
+	transmitSignal.sourceId = my_id;
+
+	// create a array of 3 floats and copy it to transmit packet data
+	memcpy(transmitSignal.data, command, sizeof(command));
+	
+	transmitSignal.dataSize = sizeof(command);
+	// transmit to follower drone
+	transmitSignal.targetId = targetID;
+	transmitSignal.packetSize = DTR_PACKET_HEADER_SIZE + transmitSignal.dataSize;
+
+	bool res;
+	res = dtrSendPacket(&transmitSignal);
+	if (res){
+		DTR_DEBUG_PRINT("Leader Packet sent to DTR protocol\n");
+	}
+	else{
+		DEBUG_PRINT("Leader Packet not sent to DTR protocol\n");
+	}
+
 }
 
 void p2pcallbackHandler(P2PPacket *p){
@@ -154,7 +180,9 @@ typedef enum {
   going_left,
   going_back,
   going_forward,
-  stopping
+  stopping,
+  rhombus_formation,
+  triangle_formation
 } State;
 
 typedef enum {
@@ -166,7 +194,9 @@ typedef enum {
   left,
   back,
   forward,
-  stop
+  stop,
+  rhombus,
+  triangle
 } Command;
 
 // store current id of drone in P2P DTR network
@@ -226,15 +256,19 @@ void appMain() {
 
         // reset kalman filter
         estimatorKalmanInit();
-        
-        if(command == start){
-          // prepare the transmit packet and send back to computer
-          transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
-          state = standby;
-          setHoverSetpoint(&setpoint, 0, 0, 0.5, 0);
-          commanderSetSetpoint(&setpoint, 3);
+
+        switch (command) {
+          case start:
+            state = standby;
+            setHoverSetpoint(&setpoint, 0, 0, 0.5, 0);
+            commanderSetSetpoint(&setpoint, 3);
+            break;
+          default:
+            DEBUG_PRINT("NO VALID COMMAND SENT FOR STATE: init\n");
         }
+      
       }
+
     } else if(state == standby){
 
       DEBUG_PRINT("Current State: standby\n");
@@ -247,25 +281,23 @@ void appMain() {
       if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), 0)) {
         command = (int)rxPacket.command;
 
-        if(command == square){
-          state = square;
-          transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
-        } else if(command == right){
-          state = going_right;
-          transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
-        } else if(command == left){
-          state = going_left;
-          transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
-        } else if(command == back){
-          state = going_back;
-          transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
-        } else if(command == forward){
-          state = going_forward;
-          transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
-        } else if(command == land){
-          state = landing;
-          transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
+        switch (command) {
+          case square:
+            state = square_formation;
+            break;
+          case rhombus:
+            state = rhombus_formation;
+            break;
+          case triangle:
+            state = triangle_formation;
+            break;
+          case land:
+            state = landing;
+            break;
+          default:
+              DEBUG_PRINT("NO VALID COMMAND SENT FOR STATE: standby\n");
         }
+        
       }
 
     } else if(state == square_formation){ 
@@ -277,6 +309,7 @@ void appMain() {
       commanderSetSetpoint(&setpoint, 3);
 
       transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
+
 
       if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), 0)) {
         command = (int)rxPacket.command;
