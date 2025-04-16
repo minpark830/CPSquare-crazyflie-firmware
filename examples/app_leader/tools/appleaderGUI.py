@@ -166,20 +166,22 @@ class App:
     def connect_to_crazyflie(self):
         # Initialize the low-level drivers
         cflib.crtp.init_drivers(enable_debug_driver=False)
-        available = cflib.crtp.scan_interfaces()
-        print('Crazyflies found:')
-        for i in available:
-            print(i[0])
+        # available = cflib.crtp.scan_interfaces()
+        # print('Crazyflies found:')
+        # for i in available:
+        #     print(i[0])
 
         
-        if len(available) > 0:
-            # Start the connection to the first available Crazyflie
-            print(f"Connecting to {available[0][0]} ")
-            self.currentLeader = available[0][0]
+        # if len(available) > 0:
+        #     # Start the connection to the first available Crazyflie
+        #     print(f"Connecting to {available[0][0]} ")
+        #     self.currentLeader = available[0][0]
+        #     self.leader_label.config(text=f"Current Leader: {self.currentLeader}")
+        #     self.cf.open_link(available[0][0])
+        if (1):
+            self.currentLeader = 'radio://0/80/2M/E7E7E7E7E7'
             self.leader_label.config(text=f"Current Leader: {self.currentLeader}")
-            self.cf.open_link(available[0][0])
-        # if (1):
-        #     self.cf.open_link('radio://0/80/2M/E7E7E7E7E8')
+            self.cf.open_link('radio://0/80/2M/E7E7E7E7E7?rate_limit=100')
         else:
             print("Error", "No Crazyflies found, cannot run example")
 

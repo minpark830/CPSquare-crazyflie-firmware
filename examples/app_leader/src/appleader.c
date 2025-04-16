@@ -28,7 +28,10 @@
 #define DEBUG_MODULE "APPLEADER"
 
 // define the ids of each node in the network
-#define NETWORK_TOPOLOGY {.size = 4, .devices_ids = {0, 1, 2, 3} } // Maximum size of network is 20 by default
+#define NETWORK_TOPOLOGY {.size = 2, .devices_ids = {231, 232} } // Maximum size of network is 20 by default
+//#define NETWORK_TOPOLOGY {.size = 4, .devices_ids = {0, 1, 2, 3} } // Maximum size of network is 20 by default
+
+#define LEADER_ID 231
 
 // store current id of drone in P2P DTR network
 static uint8_t my_id;
@@ -141,11 +144,8 @@ void sendCommandToFollower(int targetID, int command){
   dtrPacket transmitSignal;
 	transmitSignal.messageType = DATA_FRAME;
 	transmitSignal.sourceId = my_id;
-
-	// create a array of 3 floats and copy it to transmit packet data
-	memcpy(transmitSignal.data, command, sizeof(command));
-	
-	transmitSignal.dataSize = sizeof(command);
+	transmitSignal.dataSize = 1;
+  transmitSignal.data[0] = command;
 	// transmit to follower drone
 	transmitSignal.targetId = targetID;
 	transmitSignal.packetSize = DTR_PACKET_HEADER_SIZE + transmitSignal.dataSize;
@@ -225,6 +225,8 @@ void appMain() {
   logVarId_t idFlowZ = logGetVarId("stateEstimate", "z");
   paramVarId_t idFlowDeck = paramGetVarId("deck", "bcFlow2");
 
+  //bool firstCommand = true;
+
   // set self id for network
 	my_id = dtrGetSelfId();
 
@@ -281,6 +283,8 @@ void appMain() {
       if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), 0)) {
         command = (int)rxPacket.command;
 
+        sendCommandToFollower(0xFF,1);
+
         switch (command) {
           case square:
             state = square_formation;
@@ -302,14 +306,11 @@ void appMain() {
 
     } else if(state == square_formation){ 
 
-      DEBUG_PRINT("Current State: square_formation\n");
+      //DEBUG_PRINT("Current State: square_formation\n");
 
       vTaskDelay(10);
-      setHoverSetpoint(&setpoint, 0.2, 0.2, 0.5, 0);
+      setHoverSetpoint(&setpoint, logGetFloat(idFlowX), logGetFloat(idFlowY), 0.5, 0);
       commanderSetSetpoint(&setpoint, 3);
-
-      transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
-
 
       if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), 0)) {
         command = (int)rxPacket.command;
@@ -319,6 +320,8 @@ void appMain() {
           transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
         }
       }
+
+      transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
 
     } else if(state == going_right){
       

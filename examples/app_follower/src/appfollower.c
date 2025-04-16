@@ -22,6 +22,7 @@
 
 #define DEBUG_MODULE "APPFOLLOWER"
 #include "debug.h"
+#include "estimator_kalman.h"
 
 #include "token_ring.h"
 #include "DTR_p2p_interface.h"
@@ -40,7 +41,10 @@ typedef enum {
 } Command;
 
 // define the ids of each node in the network
-#define NETWORK_TOPOLOGY {.size = 4, .devices_ids = {0, 1, 2, 3} } // Maximum size of network is 20 by default
+#define NETWORK_TOPOLOGY {.size = 2, .devices_ids = {231, 232} } // Maximum size of network is 20 by default
+//#define NETWORK_TOPOLOGY {.size = 4, .devices_ids = {0, 1, 2, 3} } // Maximum size of network is 20 by default
+
+#define LEADER_ID 231
 
 // store current id of drone in P2P DTR network
 static uint8_t my_id;
@@ -60,6 +64,23 @@ static State state = init;
 
 // leader starts in nothing command
 //static Command command = nothing;
+
+// define hover setpoint function to be based off positional values (x,y,z, yaw)
+static void setHoverSetpoint(setpoint_t *setpoint, float x, float y, float z, float yaw){
+	setpoint->mode.z = modeAbs;
+	setpoint->position.z = z;
+   
+   
+	setpoint->mode.yaw = modeAbs;
+	setpoint->attitude.yaw = yaw;
+   
+   
+	setpoint->mode.x = modeAbs;
+	setpoint->mode.y = modeAbs;
+	setpoint->position.x = x;
+	setpoint->position.y = y;
+  
+}
 
 // function to load/send transmit packet so it transmit current x, y, z of follower drone
 void sendPackets(float x, float y, float z){
@@ -100,15 +121,23 @@ void p2pcallbackHandler(P2PPacket *p){
 
 void appMain(){
 
+	static setpoint_t setpoint;
+
 	logVarId_t idFlowX = logGetVarId("stateEstimate", "x");
   	logVarId_t idFlowY = logGetVarId("stateEstimate", "y");
 	logVarId_t idFlowZ = logGetVarId("stateEstimate", "z");
 	paramVarId_t idFlowDeck = paramGetVarId("deck", "bcFlow2");
-
-	//static setpoint_t setpoint;
 	
 	// set self id for network
 	my_id = dtrGetSelfId();
+
+	// DEBUG_PRINT("Current ID: %d\n", my_id);
+
+	// DEBUG_PRINT("Network Topology: %d", topology.size);
+	// for (int i = 0; i < topology.size; i++){
+	// 	DEBUG_PRINT("%d ", topology.devices_ids[i]);
+	// }
+	// DEBUG_PRINT("\n");
 
 	// enable P2P DTR network
 	dtrEnableProtocol(topology);
@@ -119,9 +148,9 @@ void appMain(){
 	p2pRegisterCB(p2pcallbackHandler);
 
 	dtrPacket receivedPacket;
-	float currentX;
-	float currentY;
-	float currentZ;
+	// float currentX;
+	// float currentY;
+	// float currentZ;
 
 	// reset kalman filter
 	estimatorKalmanInit();
@@ -133,23 +162,34 @@ void appMain(){
 		if(state==init){
 			// wait for command to start up from leader drone
 			// wait until a P2P DTR packet is received
+			
+			if (my_id == topology.devices_ids[0]){
+				DEBUG_PRINT("Starting communication...\n");
+			}
+
 			if(dtrGetPacket(&receivedPacket, portMAX_DELAY)){
 				DEBUG_PRINT("Received data from %d : \n",receivedPacket.sourceId);
-				
-				receivedPacket.data[0]
+				estimatorKalmanInit();
 
+				if(flowDeckOn){
+					DEBUG_PRINT("x: %f, y: %f, z: %f\n", (double)logGetFloat(idFlowX), (double)logGetFloat(idFlowY), (double)logGetFloat(idFlowZ));
+				}
+
+				if(receivedPacket.data[0] == 1){
+					state = standby;
+					setHoverSetpoint(&setpoint, 0, 0, 0.5, 0);
+					commanderSetSetpoint(&setpoint, 3);
+				}
 			} 
-			// regardless of if command is sent or not send back current position to 
-			if(flowDeckOn){
-
-				currentX = logGetFloat(idFlowX);
-				currentY = logGetFloat(idFlowY);
-				currentZ = logGetFloat(idFlowZ);
-	
-				sendPackets(my_id, currentX, currentY, currentZ);
-			}
+			
 		} else if(state==standby){
- 
+
+			DEBUG_PRINT("Current State: standby\n");
+			// NOTE IMPORTANT TO KEEP DELAY NOT TOO FAST
+			vTaskDelay(100);
+			setHoverSetpoint(&setpoint, 0, 0, 0.5, 0);
+			commanderSetSetpoint(&setpoint, 3);
+
 		} else if(state==square_formation){
 
 		} else{
