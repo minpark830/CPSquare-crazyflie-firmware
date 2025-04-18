@@ -118,12 +118,10 @@ void sendLeaderPosition(int targetID, float x, float y, float z){
 	dtrPacket transmitSignal;
 	transmitSignal.messageType = DATA_FRAME;
 	transmitSignal.sourceId = my_id;
-
-	// create a array of 3 floats and copy it to transmit packet data
-	float leaderPos[3] = {x, y, z};
-	memcpy(transmitSignal.data, leaderPos, sizeof(leaderPos));
-	
-	transmitSignal.dataSize = sizeof(leaderPos);
+  transmitSignal.dataSize = 3*sizeof(float);
+  transmitSignal.data[0] = x;
+  transmitSignal.data[1] = y;
+  transmitSignal.data[2] = z;
 	// transmit to follower drone
 	transmitSignal.targetId = targetID;
 	transmitSignal.packetSize = DTR_PACKET_HEADER_SIZE + transmitSignal.dataSize;
@@ -225,6 +223,7 @@ void appMain() {
   logVarId_t idFlowZ = logGetVarId("stateEstimate", "z");
   paramVarId_t idFlowDeck = paramGetVarId("deck", "bcFlow2");
 
+  dtrPacket receivedPacket;
   //bool firstCommand = true;
 
   // set self id for network
@@ -238,6 +237,8 @@ void appMain() {
 	p2pRegisterCB(p2pcallbackHandler);
 
   DEBUG_PRINT("Current ID: %d\n", my_id);
+
+  Command previousCommand = nothing;
 
   // reset kalman filter
   estimatorKalmanInit();
@@ -288,18 +289,21 @@ void appMain() {
         switch (command) {
           case square:
             state = square_formation;
+            previousCommand = nothing;
             break;
           case rhombus:
             state = rhombus_formation;
+            previousCommand = nothing;
             break;
           case triangle:
             state = triangle_formation;
+            previousCommand = nothing;
             break;
           case land:
             state = landing;
             break;
           default:
-              DEBUG_PRINT("NO VALID COMMAND SENT FOR STATE: standby\n");
+              DEBUG_PRINT("NO VALID COMMAND SENT, AT STATE: standby\n");
         }
         
       }
@@ -308,20 +312,109 @@ void appMain() {
 
       //DEBUG_PRINT("Current State: square_formation\n");
 
-      vTaskDelay(10);
-      setHoverSetpoint(&setpoint, logGetFloat(idFlowX), logGetFloat(idFlowY), 0.5, 0);
-      commanderSetSetpoint(&setpoint, 3);
+      DEBUG_PRINT("start\n");
+
+      switch(previousCommand){
+        case right:
+          vTaskDelay(10);
+          setVelocityHoverSetpoint(&setpoint, 0, -0.1, 0, 0);
+          commanderSetSetpoint(&setpoint, 3);
+          break;
+        case left:
+          vTaskDelay(10);
+          setVelocityHoverSetpoint(&setpoint, 0, 0.1, 0, 0);
+          commanderSetSetpoint(&setpoint, 3);
+          break;
+        case back:
+          vTaskDelay(10);
+          setVelocityHoverSetpoint(&setpoint, -0.1, 0, 0, 0);
+          commanderSetSetpoint(&setpoint, 3);
+          break;
+        case forward:
+          vTaskDelay(10);
+          setVelocityHoverSetpoint(&setpoint, 0.1, 0, 0, 0);
+          commanderSetSetpoint(&setpoint, 3);
+          break;
+        default:
+          vTaskDelay(10);
+          setVelocityHoverSetpoint(&setpoint, 0, 0, 0, 0);
+          commanderSetSetpoint(&setpoint, 3);
+          break;
+      }
+
+      sendLeaderPosition(0xFF, logGetFloat(idFlowX), logGetFloat(idFlowY), logGetFloat(idFlowZ));
 
       if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), 0)) {
         command = (int)rxPacket.command;
 
-        if(command == land){
-          state = landing;
-          transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
+        switch (command) {
+          case rhombus:
+            vTaskDelay(10);
+            setVelocityHoverSetpoint(&setpoint, 0, 0, 0, 0);
+            commanderSetSetpoint(&setpoint, 3);
+            state = rhombus_formation;
+            break;
+          case triangle:
+            vTaskDelay(10);
+            setVelocityHoverSetpoint(&setpoint, 0, 0, 0, 0);
+            commanderSetSetpoint(&setpoint, 3);
+            state = triangle_formation;
+            break;
+          case right:
+            vTaskDelay(10);
+            setVelocityHoverSetpoint(&setpoint, 0, -0.1, 0, 0);
+            commanderSetSetpoint(&setpoint, 3);
+            previousCommand = right;
+            break;
+          case left:
+            vTaskDelay(10);
+            setVelocityHoverSetpoint(&setpoint, 0, 0.1, 0, 0);
+            commanderSetSetpoint(&setpoint, 3);
+            previousCommand = left;
+            break;
+          case back:
+            vTaskDelay(10);
+            setVelocityHoverSetpoint(&setpoint, -0.1, 0, 0, 0);
+            commanderSetSetpoint(&setpoint, 3);
+            previousCommand = back;
+            break;
+          case forward:
+            vTaskDelay(10);
+            setVelocityHoverSetpoint(&setpoint, 0.1, 0, 0, 0);
+            commanderSetSetpoint(&setpoint, 3);
+            previousCommand = forward;
+            break;
+          case stop:
+            vTaskDelay(10);
+            setVelocityHoverSetpoint(&setpoint, 0, 0, 0, 0);
+            commanderSetSetpoint(&setpoint, 3);
+            previousCommand = stop;
+            break;
+          case land:
+            vTaskDelay(10);
+            setVelocityHoverSetpoint(&setpoint, 0, 0, 0, 0);
+            commanderSetSetpoint(&setpoint, 3);
+            state = landing;
+            break;
+          default:
+              DEBUG_PRINT("NO VALID COMMAND SENT, AT STATE: square_formation\n");
+        }
+
+      }
+      
+      // send leader position to app
+      transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
+
+      DEBUG_PRINT("middle\n");
+
+      // send follower positions to app
+      if(dtrGetPacket(&receivedPacket, 0)){
+        if(receivedPacket.dataSize >= 3){
+          transmitData(flowDeckOn, &txPacket, receivedPacket.sourceId, receivedPacket.data[0], receivedPacket.data[1], receivedPacket.data[2]);
         }
       }
 
-      transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
+      DEBUG_PRINT("end\n");
 
     } else if(state == going_right){
       

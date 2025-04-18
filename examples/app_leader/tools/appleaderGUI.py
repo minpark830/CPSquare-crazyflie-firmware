@@ -107,7 +107,7 @@ class App:
         down_button.grid(row=2, column=1, padx=10, pady=10)
 
         # Optional: Center Stop Button
-        stop_button = tk.Button(control_frame, text="■", font=control_font, width=control_size)
+        stop_button = tk.Button(control_frame, text="■", font=control_font, width=control_size, command=self.sendStopCommand)
         stop_button.grid(row=1, column=1)
 
 
@@ -150,11 +150,12 @@ class App:
     def app_packet_received(self, data):
         (id, x, y, z) = struct.unpack("<ifff", data)
         self.receivedData = True
+        print(id)
         match id:
-            case 321:
+            case 231:
                 # leader
                 self.ax.scatter(x,y,z, marker = 'x', color='b', label='leader')
-            case 320:
+            case 232:
                 # follower
                 self.ax.scatter(x,y,z, marker = 'x', color='r', label='follower 1')
         if(self.firstTime):
@@ -214,6 +215,10 @@ class App:
     def sendFowardCommand(self):
         self.send_command(7)
         print("Sent Foward Command")
+    
+    def sendStopCommand(self):
+        self.send_command(8)
+        print("Sent Stop Command")
 
     def sendStartCommand(self):
         self.send_command(1)
