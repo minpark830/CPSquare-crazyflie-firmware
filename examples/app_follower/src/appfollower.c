@@ -175,7 +175,9 @@ void appMain(){
 					DEBUG_PRINT("x: %f, y: %f, z: %f\n", (double)logGetFloat(idFlowX), (double)logGetFloat(idFlowY), (double)logGetFloat(idFlowZ));
 				}
 
-				if(receivedPacket.data[0] == 1){
+				// received the start command from leader drone
+				if(receivedPacket.dataSize == 1 && receivedPacket.data[0] == start){
+					DEBUG_PRINT("Received start command from leader\n");
 					state = standby;
 					setHoverSetpoint(&setpoint, 0, 0, 0.5, 0);
 					commanderSetSetpoint(&setpoint, 3);
