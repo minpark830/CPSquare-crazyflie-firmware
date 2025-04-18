@@ -152,6 +152,8 @@ void appMain(){
 	// float currentY;
 	// float currentZ;
 
+	DEBUG_PRINT("First Kalman Filter Reset\n");
+
 	// reset kalman filter
 	estimatorKalmanInit();
 
@@ -162,14 +164,12 @@ void appMain(){
 		if(state==init){
 			// wait for command to start up from leader drone
 			// wait until a P2P DTR packet is received
-			
-			if (my_id == topology.devices_ids[0]){
-				DEBUG_PRINT("Starting communication...\n");
-			}
 
 			if(dtrGetPacket(&receivedPacket, portMAX_DELAY)){
 				DEBUG_PRINT("Received data from %d : \n",receivedPacket.sourceId);
 				estimatorKalmanInit();
+				
+				DEBUG_PRINT("Kalman Filter Reset\n");
 
 				if(flowDeckOn){
 					DEBUG_PRINT("x: %f, y: %f, z: %f\n", (double)logGetFloat(idFlowX), (double)logGetFloat(idFlowY), (double)logGetFloat(idFlowZ));
@@ -184,9 +184,12 @@ void appMain(){
 			
 		} else if(state==standby){
 
-			DEBUG_PRINT("Current State: standby\n");
+			//DEBUG_PRINT("Current State: standby\n");
 			// NOTE IMPORTANT TO KEEP DELAY NOT TOO FAST
-			vTaskDelay(100);
+			vTaskDelay(10);
+			if(flowDeckOn){
+				DEBUG_PRINT("x: %f, y: %f, z: %f\n", (double)logGetFloat(idFlowX), (double)logGetFloat(idFlowY), (double)logGetFloat(idFlowZ));
+			}
 			setHoverSetpoint(&setpoint, 0, 0, 0.5, 0);
 			commanderSetSetpoint(&setpoint, 3);
 
