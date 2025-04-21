@@ -27,6 +27,9 @@
 #include "token_ring.h"
 #include "DTR_p2p_interface.h"
 
+#define START 1
+#define SEND_DATA 2
+
 typedef enum {
   init,
   standby,
@@ -87,23 +90,22 @@ void sendFollowerPosition(float x, float y, float z){
 	dtrPacket transmitSignal;
 	transmitSignal.messageType = DATA_FRAME;
 	transmitSignal.sourceId = my_id;
-	transmitSignal.dataSize = 3*sizeof(float);
-	transmitSignal.data[0] = x;
-	transmitSignal.data[1] = y;
-	transmitSignal.data[2] = z;
-	// transmit to follower drone
 	transmitSignal.targetId = LEADER_ID;
+	
+	memcpy(&transmitSignal.data[0], &x, sizeof(float));         
+	memcpy(&transmitSignal.data[4], &y, sizeof(float));         
+	memcpy(&transmitSignal.data[8], &z, sizeof(float));       
+  
+	transmitSignal.dataSize = 3 * sizeof(float);  
 	transmitSignal.packetSize = DTR_PACKET_HEADER_SIZE + transmitSignal.dataSize;
-
-	bool res;
-	res = dtrSendPacket(&transmitSignal);
-	if (res){
-		DTR_DEBUG_PRINT("Leader Packet sent to DTR protocol\n");
+  
+	bool res = dtrSendPacket(&transmitSignal);
+  
+	if (res) {
+		DTR_DEBUG_PRINT("Send Follower Position\n");
+	} else {
+		DEBUG_PRINT("Didn't Send Follower Position\n");
 	}
-	else{
-		DEBUG_PRINT("Leader Packet not sent to DTR protocol\n");
-	}
-
 }
 
 void p2pcallbackHandler(P2PPacket *p){
@@ -173,7 +175,7 @@ void appMain(){
 				}
 
 				// received the start command from leader drone
-				if(receivedPacket.dataSize == 1 && receivedPacket.data[0] == start){
+				if(receivedPacket.dataSize == 1 && receivedPacket.data[0] == START){
 					DEBUG_PRINT("Received start command from leader\n");
 					state = standby;
 					setHoverSetpoint(&setpoint, 0, 0, 0.4, 0);
@@ -192,9 +194,12 @@ void appMain(){
 			setHoverSetpoint(&setpoint, 0, 0, 0.4, 0);
 			commanderSetSetpoint(&setpoint, 3);
 
-			sendFollowerPosition((double)logGetFloat(idFlowX), (double)logGetFloat(idFlowY), (double)logGetFloat(idFlowZ));
+			if(dtrGetPacket(&receivedPacket, 10)){
+				if(receivedPacket.dataSize == 1 && receivedPacket.data[0] == SEND_DATA){
+					sendFollowerPosition((double)logGetFloat(idFlowX), (double)logGetFloat(idFlowY), (double)logGetFloat(idFlowZ));
+				} else if(receivedPacket.dataSize == 3 && ){
 
-			if(dtrGetPacket(&receivedPacket, 0)){
+				}
 				DEBUG_PRINT("Received packet from Leader drone\n");
 				DEBUG_PRINT("From %d x: %f, y: %f, z: %f\n", receivedPacket.sourceId, receivedPacket.data[0], receivedPacket.data[1], receivedPacket.data[2]);
 			}

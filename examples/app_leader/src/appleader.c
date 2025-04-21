@@ -36,6 +36,9 @@
 #define FOLLOWER_2_ID 230
 #define FOLLOWER_3_ID 233
 
+#define START 1
+#define SEND_DATA 2
+
 // store current id of drone in P2P DTR network
 static uint8_t my_id;
 
@@ -118,47 +121,48 @@ static bool transmitData(uint8_t flowDeckOn, testPacketTX *txPacket, int id, log
 
 // function to load/send transmit packet so it transmit current x, y, z of leader drone to follower
 void sendLeaderPosition(int targetID, float x, float y, float z){
-	dtrPacket transmitSignal;
-	transmitSignal.messageType = DATA_FRAME;
-	transmitSignal.sourceId = my_id;
-  transmitSignal.dataSize = 3*sizeof(float);
-  transmitSignal.data[0] = x;
-  transmitSignal.data[1] = y;
-  transmitSignal.data[2] = z;
-	// transmit to follower drone
-	transmitSignal.targetId = targetID;
-	transmitSignal.packetSize = DTR_PACKET_HEADER_SIZE + transmitSignal.dataSize;
+  dtrPacket transmitSignal;
+  transmitSignal.messageType = DATA_FRAME;
+  transmitSignal.sourceId = my_id;
+  transmitSignal.targetId = targetID;
+  
+  memcpy(&transmitSignal.data[0], &x, sizeof(float));         
+  memcpy(&transmitSignal.data[4], &y, sizeof(float));         
+  memcpy(&transmitSignal.data[8], &z, sizeof(float));       
 
-	bool res;
-	res = dtrSendPacket(&transmitSignal);
-	if (res){
-		DTR_DEBUG_PRINT("Send Leader Position\n");
-	}
-	else{
-		DEBUG_PRINT("Didn't Send Leader Position\n");
-	}
+  transmitSignal.dataSize = 3 * sizeof(float);  
+  transmitSignal.packetSize = DTR_PACKET_HEADER_SIZE + transmitSignal.dataSize;
+
+  bool res = dtrSendPacket(&transmitSignal);
+
+  if (res) {
+      DTR_DEBUG_PRINT("Send Leader Position\n");
+  } else {
+      DEBUG_PRINT("Didn't Send Leader Position\n");
+  }
 
 }
 
 // function to load/send transmit packet so it transmit command to follower drone
 void sendCommandToFollower(int targetID, int command){
   dtrPacket transmitSignal;
-	transmitSignal.messageType = DATA_FRAME;
-	transmitSignal.sourceId = my_id;
-	transmitSignal.dataSize = 1;
-  transmitSignal.data[0] = command;
-	// transmit to follower drone
-	transmitSignal.targetId = targetID;
-	transmitSignal.packetSize = DTR_PACKET_HEADER_SIZE + transmitSignal.dataSize;
+  transmitSignal.messageType = DATA_FRAME;
+  transmitSignal.sourceId = my_id;
+  transmitSignal.targetId = targetID;
 
-	bool res;
-	res = dtrSendPacket(&transmitSignal);
-	if (res){
-		DTR_DEBUG_PRINT("Send Command to Follower\n");
-	}
-	else{
-		DEBUG_PRINT("Didn't Send Command to Follower\n");
-	}
+  // Copy full 4-byte integer into the data buffer
+  memcpy(&transmitSignal.data[0], &command, sizeof(int));
+
+  transmitSignal.dataSize = sizeof(int); // Now sending 4 bytes, not 1
+  transmitSignal.packetSize = DTR_PACKET_HEADER_SIZE + transmitSignal.dataSize;
+
+  bool res = dtrSendPacket(&transmitSignal);
+
+  if (res) {
+      DTR_DEBUG_PRINT("Send Command to Follower\n");
+  } else {
+      DEBUG_PRINT("Didn't Send Command to Follower\n");
+  }
 
 }
 
@@ -296,7 +300,7 @@ void appMain() {
       if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), 0)) {
         command = (int)rxPacket.command;
 
-        sendCommandToFollower(0xFF,1);
+        sendCommandToFollower(0xFF,START);
 
         switch (command) {
           case square:
@@ -415,113 +419,27 @@ void appMain() {
 
       }
       
-      // switch(drone){
-      //   case leader:
-      //     // send leader position to app
-      //     transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
-      //     break;
-      //   case follower_1:
+      switch(drone){
+        case leader:
+          // send leader position to app
+          transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
+          drone = follower_1;
 
-      // }
+          // send follower 1 drone command to send position to leader
+          sendCommandToFollower(FOLLOWER_1_ID, SEND_DATA);
+          break;
+        case follower_1:
+
+      }
 
 
       // send follower positions to app
       if(dtrGetPacket(&receivedPacket, 0)){
         DEBUG_PRINT("Received packet from Follower drone\n");
-        if(receivedPacket.dataSize >= 3){
+        if(receivedPacket.dataSize == 3*sizeof(float)){
           transmitData(flowDeckOn, &txPacket, receivedPacket.sourceId, receivedPacket.data[0], receivedPacket.data[1], receivedPacket.data[2]);
         }
       }
-
-    } else if(state == going_right){
-      
-      DEBUG_PRINT("Current State: going_right\n");
-
-      vTaskDelay(10);
-      setVelocityHoverSetpoint(&setpoint, 0, -0.1, 0, 0);
-      commanderSetSetpoint(&setpoint, 3);
-
-      if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), 0)) {
-        command = (int)rxPacket.command;
-
-        if(command == land){
-          state = landing;
-          transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
-        }
-      }
-
-
-    } else if(state == going_left){
-      
-      DEBUG_PRINT("Current State: going_left\n");
-
-      vTaskDelay(10);
-      setVelocityHoverSetpoint(&setpoint, 0, 0.1, 0, 0);
-      commanderSetSetpoint(&setpoint, 3);
-
-      if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), 0)) {
-        command = (int)rxPacket.command;
-
-        if(command == land){
-          state = landing;
-          transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
-        }
-      }
-
-
-    } else if(state == going_back){
-      
-      DEBUG_PRINT("Current State: going_back\n");
-
-      vTaskDelay(10);
-      setVelocityHoverSetpoint(&setpoint, -0.1, 0, 0, 0);
-      commanderSetSetpoint(&setpoint, 3);
-
-      if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), 0)) {
-        command = (int)rxPacket.command;
-
-        if(command == land){
-          state = landing;
-          transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
-        }
-      }
-
-
-    } else if(state == going_forward){
-      
-      DEBUG_PRINT("Current State: going_forward\n");
-
-      vTaskDelay(10);
-      setVelocityHoverSetpoint(&setpoint, 0.1, 0, 0, 0);
-      commanderSetSetpoint(&setpoint, 3);
-
-      if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), 0)) {
-        command = (int)rxPacket.command;
-
-        if(command == land){
-          state = landing;
-          transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
-        }
-      }
-
-
-    } else if (state == stopping){
-
-      DEBUG_PRINT("Current State: stopping\n");
-
-      vTaskDelay(10);
-      setVelocityHoverSetpoint(&setpoint, 0, 0, 0, 0);
-      commanderSetSetpoint(&setpoint, 3);
-
-      if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), 0)) {
-        command = (int)rxPacket.command;
-
-        if(command == land){
-          state = landing;
-          transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
-        }
-      }
-
 
     } else if(state == landing){
       // for some reason landing produces a lock and reboot required for supervisor
