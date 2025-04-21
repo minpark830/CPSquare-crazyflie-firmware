@@ -41,7 +41,7 @@ typedef enum {
 } Command;
 
 // define the ids of each node in the network
-#define NETWORK_TOPOLOGY {.size = 2, .devices_ids = {231, 232} } // Maximum size of network is 20 by default
+#define NETWORK_TOPOLOGY {.size = 3, .devices_ids = {231, 230, 232} } // Maximum size of network is 20 by default
 //#define NETWORK_TOPOLOGY {.size = 4, .devices_ids = {0, 1, 2, 3} } // Maximum size of network is 20 by default
 
 #define LEADER_ID 231
@@ -82,31 +82,28 @@ static void setHoverSetpoint(setpoint_t *setpoint, float x, float y, float z, fl
   
 }
 
-// function to load/send transmit packet so it transmit current x, y, z of follower drone
-void sendPackets(float x, float y, float z){
+// function to load/send transmit packet so it transmit current x, y, z of leader drone to follower
+void sendFollowerPosition(float x, float y, float z){
 	dtrPacket transmitSignal;
 	transmitSignal.messageType = DATA_FRAME;
 	transmitSignal.sourceId = my_id;
-
-	// create a array of 3 floats and copy it to transmit packet data
-	float followerPos[3] = {x, y, z};
-	memcpy(transmitSignal.data, followerPos, sizeof(followerPos));
-	
-	transmitSignal.dataSize = sizeof(followerPos);
-	// transmit to leader drone, id of 0 (first to join network)
-	transmitSignal.targetId = 0;
+	transmitSignal.dataSize = 3*sizeof(float);
+	transmitSignal.data[0] = x;
+	transmitSignal.data[1] = y;
+	transmitSignal.data[2] = z;
+	// transmit to follower drone
+	transmitSignal.targetId = LEADER_ID;
 	transmitSignal.packetSize = DTR_PACKET_HEADER_SIZE + transmitSignal.dataSize;
 
 	bool res;
 	res = dtrSendPacket(&transmitSignal);
-
 	if (res){
-		DTR_DEBUG_PRINT("Packet sent to DTR protocol\n");
+		DTR_DEBUG_PRINT("Leader Packet sent to DTR protocol\n");
 	}
 	else{
-		DEBUG_PRINT("Packet not sent to DTR protocol\n");
+		DEBUG_PRINT("Leader Packet not sent to DTR protocol\n");
 	}
-	
+
 }
 
 void p2pcallbackHandler(P2PPacket *p){
@@ -179,7 +176,7 @@ void appMain(){
 				if(receivedPacket.dataSize == 1 && receivedPacket.data[0] == start){
 					DEBUG_PRINT("Received start command from leader\n");
 					state = standby;
-					setHoverSetpoint(&setpoint, 0, 0, 0.5, 0);
+					setHoverSetpoint(&setpoint, 0, 0, 0.4, 0);
 					commanderSetSetpoint(&setpoint, 3);
 				}
 			} 
@@ -192,8 +189,15 @@ void appMain(){
 			if(flowDeckOn){
 				DEBUG_PRINT("x: %f, y: %f, z: %f\n", (double)logGetFloat(idFlowX), (double)logGetFloat(idFlowY), (double)logGetFloat(idFlowZ));
 			}
-			setHoverSetpoint(&setpoint, 0, 0, 0.5, 0);
+			setHoverSetpoint(&setpoint, 0, 0, 0.4, 0);
 			commanderSetSetpoint(&setpoint, 3);
+
+			sendFollowerPosition((double)logGetFloat(idFlowX), (double)logGetFloat(idFlowY), (double)logGetFloat(idFlowZ));
+
+			if(dtrGetPacket(&receivedPacket, 0)){
+				DEBUG_PRINT("Received packet from Leader drone\n");
+				DEBUG_PRINT("From %d x: %f, y: %f, z: %f\n", receivedPacket.sourceId, receivedPacket.data[0], receivedPacket.data[1], receivedPacket.data[2]);
+			}
 
 		} else if(state==square_formation){
 

@@ -28,10 +28,13 @@
 #define DEBUG_MODULE "APPLEADER"
 
 // define the ids of each node in the network
-#define NETWORK_TOPOLOGY {.size = 2, .devices_ids = {231, 232} } // Maximum size of network is 20 by default
+#define NETWORK_TOPOLOGY {.size = 3, .devices_ids = {231, 230, 232} } // Maximum size of network is 20 by default
 //#define NETWORK_TOPOLOGY {.size = 4, .devices_ids = {0, 1, 2, 3} } // Maximum size of network is 20 by default
 
 #define LEADER_ID 231
+#define FOLLOWER_1_ID 232
+#define FOLLOWER_2_ID 230
+#define FOLLOWER_3_ID 233
 
 // store current id of drone in P2P DTR network
 static uint8_t my_id;
@@ -129,10 +132,10 @@ void sendLeaderPosition(int targetID, float x, float y, float z){
 	bool res;
 	res = dtrSendPacket(&transmitSignal);
 	if (res){
-		DTR_DEBUG_PRINT("Leader Packet sent to DTR protocol\n");
+		DTR_DEBUG_PRINT("Send Leader Position\n");
 	}
 	else{
-		DEBUG_PRINT("Leader Packet not sent to DTR protocol\n");
+		DEBUG_PRINT("Didn't Send Leader Position\n");
 	}
 
 }
@@ -151,10 +154,10 @@ void sendCommandToFollower(int targetID, int command){
 	bool res;
 	res = dtrSendPacket(&transmitSignal);
 	if (res){
-		DTR_DEBUG_PRINT("Leader Packet sent to DTR protocol\n");
+		DTR_DEBUG_PRINT("Send Command to Follower\n");
 	}
 	else{
-		DEBUG_PRINT("Leader Packet not sent to DTR protocol\n");
+		DEBUG_PRINT("Didn't Send Command to Follower\n");
 	}
 
 }
@@ -197,6 +200,13 @@ typedef enum {
   triangle
 } Command;
 
+typedef enum {
+  leader,
+  follower_1,
+  follower_2,
+  follower_3
+} currentDrone;
+
 // store current id of drone in P2P DTR network
 //static uint8_t my_id;
 
@@ -208,6 +218,8 @@ static State state = init;
 
 // leader starts in nothing command
 static Command command = nothing;
+
+static currentDrone drone = leader;
 
 void appMain() {
 
@@ -290,14 +302,17 @@ void appMain() {
           case square:
             state = square_formation;
             previousCommand = nothing;
+            drone = leader;
             break;
           case rhombus:
             state = rhombus_formation;
             previousCommand = nothing;
+            drone = leader;
             break;
           case triangle:
             state = triangle_formation;
             previousCommand = nothing;
+            drone = leader;
             break;
           case land:
             state = landing;
@@ -311,8 +326,6 @@ void appMain() {
     } else if(state == square_formation){ 
 
       //DEBUG_PRINT("Current State: square_formation\n");
-
-      DEBUG_PRINT("start\n");
 
       switch(previousCommand){
         case right:
@@ -402,19 +415,23 @@ void appMain() {
 
       }
       
-      // send leader position to app
-      transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
+      // switch(drone){
+      //   case leader:
+      //     // send leader position to app
+      //     transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
+      //     break;
+      //   case follower_1:
 
-      DEBUG_PRINT("middle\n");
+      // }
+
 
       // send follower positions to app
       if(dtrGetPacket(&receivedPacket, 0)){
+        DEBUG_PRINT("Received packet from Follower drone\n");
         if(receivedPacket.dataSize >= 3){
           transmitData(flowDeckOn, &txPacket, receivedPacket.sourceId, receivedPacket.data[0], receivedPacket.data[1], receivedPacket.data[2]);
         }
       }
-
-      DEBUG_PRINT("end\n");
 
     } else if(state == going_right){
       

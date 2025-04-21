@@ -23,7 +23,11 @@ class App:
 
         self.currentLeader = "None"
         self.receivedData = False
-        self.firstTime = True
+        self.leaderFirstTime = True
+        self.follower1FirstTime = True
+        self.follower2FirstTime = True
+        self.follower3FirstTime = True
+
 
         self.root = root
         self.root.title("Bitcraze Experimental Framework")
@@ -155,12 +159,21 @@ class App:
             case 231:
                 # leader
                 self.ax.scatter(x,y,z, marker = 'x', color='b', label='leader')
+                if(self.leaderFirstTime):
+                    self.ax.legend()
+                    self.leaderFirstTime = False
             case 232:
-                # follower
-                self.ax.scatter(x,y,z, marker = 'x', color='r', label='follower 1')
-        if(self.firstTime):
-            self.ax.legend()
-            self.firstTime = False
+                # follower 1
+                self.ax.scatter(x,y,z, marker = 'o', color='r', label='follower 1')
+                if(self.follower1FirstTime):
+                    self.ax.legend()
+                    self.follower1FirstTime = False
+            case 230:
+                # follower 2
+                self.ax.scatter(x,y,z, marker = 'o', color='g', label='follower 2')
+                if(self.follower2FirstTime):
+                    self.ax.legend()
+                    self.follower2FirstTime = False
         self.canvas.draw()
         print(f"Received coordinates: {x}, {y}, {z}")
 
