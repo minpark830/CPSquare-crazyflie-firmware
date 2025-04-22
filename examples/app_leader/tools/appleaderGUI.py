@@ -8,6 +8,8 @@ import struct
 from threading import Thread
 import time
 import os
+import pickle
+from datetime import datetime
 from PIL import Image, ImageTk    
 
 class App:
@@ -27,6 +29,12 @@ class App:
         self.follower1FirstTime = True
         self.follower2FirstTime = True
         self.follower3FirstTime = True
+
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        self.pickle_file = os.path.join(current_dir, "collected_data", f"data_{timestamp}.pkl")
+
+        self.data = []
 
 
         self.root = root
@@ -91,7 +99,7 @@ class App:
         control_frame = tk.Frame(root, bg='white')
         control_frame.pack(pady=20)
 
-        control_font = ("Arial", 15)  # Big font for arrow symbols
+        control_font = ("Arial", 10)  # Big font for arrow symbols
         control_size = 4             # Width and height in character units
 
         # Up Arrow
@@ -113,6 +121,16 @@ class App:
         # Optional: Center Stop Button
         stop_button = tk.Button(control_frame, text="■", font=control_font, width=control_size, command=self.sendStopCommand)
         stop_button.grid(row=1, column=1)
+
+        data_label = tk.Label(root, text=f"Data Commands", font=("Arial", 14), bg='white')
+        data_label.pack()
+
+        # Data 
+        data_frame = tk.Frame(root, bg='white')
+        data_frame.pack(pady=20)
+
+        save_button = tk.Button(data_frame, text="Save Data", command=self.saveData)
+        save_button.pack()
 
 
         # Create a Matplotlib figure
@@ -151,9 +169,15 @@ class App:
     def disconnected(self, uri):
         """Callback when the Crazyflie is disconnected (called in all cases)"""
 
+    def saveData(self):
+        print(f"Saving to: {self.pickle_file} ")
+        with open(self.pickle_file, "wb") as f:
+            pickle.dump(self.data, f)
+
     def app_packet_received(self, data):
         (id, x, y, z) = struct.unpack("<ifff", data)
         self.receivedData = True
+        self.data.append([id, x, y, z])
         print(id)
         match id:
             case 231:
