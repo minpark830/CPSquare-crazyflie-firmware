@@ -105,18 +105,14 @@ static void setVelocityHoverSetpoint(setpoint_t *setpoint, float xVeloc, float y
 }
 
 // define transmit data packet function based off positional values (FlowX, FlowY, FlowZ)
-static bool transmitData(uint8_t flowDeckOn, testPacketTX *txPacket, int id, logVarId_t idFlowX, logVarId_t idFlowY, logVarId_t idFlowZ){
-  if(flowDeckOn){
-    txPacket->id = id;
-    txPacket->x = logGetFloat(idFlowX);
-    txPacket->y = logGetFloat(idFlowY);
-    txPacket->z = logGetFloat(idFlowZ);
+static void transmitData(testPacketTX *txPacket, int id, float x, float y, float z){
+  txPacket->id = id;
+  txPacket->x = x;
+  txPacket->y = y;
+  txPacket->z = z;
 
-    appchannelSendDataPacketBlock(txPacket, sizeof(*txPacket)); 
-  } else{
-    return false;
-  }
-  return true;
+  appchannelSendDataPacketBlock(txPacket, sizeof(*txPacket)); 
+  
 }
 
 // function to load/send transmit packet so it transmit current x, y, z of leader drone to follower
@@ -225,6 +221,10 @@ static Command command = nothing;
 
 static currentDrone drone = leader;
 
+static float receivedX;
+static float receivedY;
+static float receivedZ;
+
 void appMain() {
 
   vTaskDelay(3000);
@@ -237,7 +237,7 @@ void appMain() {
   logVarId_t idFlowX = logGetVarId("stateEstimate", "x");
   logVarId_t idFlowY = logGetVarId("stateEstimate", "y");
   logVarId_t idFlowZ = logGetVarId("stateEstimate", "z");
-  paramVarId_t idFlowDeck = paramGetVarId("deck", "bcFlow2");
+  //paramVarId_t idFlowDeck = paramGetVarId("deck", "bcFlow2");
 
   dtrPacket receivedPacket;
   //bool firstCommand = true;
@@ -261,7 +261,7 @@ void appMain() {
 
   while(1) {
 
-    uint8_t flowDeckOn = paramGetUint(idFlowDeck);
+    //uint8_t flowDeckOn = paramGetUint(idFlowDeck);
 
     if(state==init) {
 
@@ -422,23 +422,43 @@ void appMain() {
       switch(drone){
         case leader:
           // send leader position to app
-          transmitData(flowDeckOn, &txPacket, my_id, idFlowX, idFlowY, idFlowZ);
+          transmitData(&txPacket, my_id, logGetFloat(idFlowX), logGetFloat(idFlowY), logGetFloat(idFlowZ));
           drone = follower_1;
 
           // send follower 1 drone command to send position to leader
           sendCommandToFollower(FOLLOWER_1_ID, SEND_DATA);
           break;
         case follower_1:
+          if(dtrGetPacket(&receivedPacket, 10)){
+            DEBUG_PRINT("Received packet from Follower drone\n");
+            if(receivedPacket.dataSize == 3*sizeof(float) && receivedPacket.sourceId == FOLLOWER_1_ID){
+              memcpy(&receivedX, &receivedPacket.data[0], sizeof(float));
+              memcpy(&receivedY, &receivedPacket.data[4], sizeof(float));
+              memcpy(&receivedZ, &receivedPacket.data[8], sizeof(float));
 
-      }
+              transmitData(&txPacket, FOLLOWER_1_ID, receivedX, receivedY, receivedZ);
+              DEBUG_PRINT("x: %f, y: %f, z: %f\n", (double)receivedX, (double)receivedY, (double)receivedZ);
+              sendCommandToFollower(FOLLOWER_2_ID, SEND_DATA);
+              drone = follower_2;
+            } 
+          }
+          break;
+        case follower_2:
+          if(dtrGetPacket(&receivedPacket, 10)){
+            DEBUG_PRINT("Received packet from Follower drone\n");
+            if(receivedPacket.dataSize == 3*sizeof(float) && receivedPacket.sourceId == FOLLOWER_2_ID){
+              memcpy(&receivedX, &receivedPacket.data[0], sizeof(float));
+              memcpy(&receivedY, &receivedPacket.data[4], sizeof(float));
+              memcpy(&receivedZ, &receivedPacket.data[8], sizeof(float));
 
-
-      // send follower positions to app
-      if(dtrGetPacket(&receivedPacket, 0)){
-        DEBUG_PRINT("Received packet from Follower drone\n");
-        if(receivedPacket.dataSize == 3*sizeof(float)){
-          transmitData(flowDeckOn, &txPacket, receivedPacket.sourceId, receivedPacket.data[0], receivedPacket.data[1], receivedPacket.data[2]);
-        }
+              transmitData(&txPacket, FOLLOWER_2_ID, receivedX, receivedY, receivedZ);
+              DEBUG_PRINT("x: %f, y: %f, z: %f\n", (double)receivedX, (double)receivedY, (double)receivedZ);
+              drone = leader;
+            } 
+          }
+          break;
+        case follower_3:
+          break;
       }
 
     } else if(state == landing){

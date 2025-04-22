@@ -56,11 +56,11 @@ static uint8_t my_id;
 static dtrTopology topology = NETWORK_TOPOLOGY;
 
 // store leader drone current position
-/*
+
 static float leaderX;
 static float leaderY;
 static float leaderZ;
-*/
+
 
 // leader starts in init state
 static State state = init;
@@ -125,18 +125,10 @@ void appMain(){
 	logVarId_t idFlowX = logGetVarId("stateEstimate", "x");
   	logVarId_t idFlowY = logGetVarId("stateEstimate", "y");
 	logVarId_t idFlowZ = logGetVarId("stateEstimate", "z");
-	paramVarId_t idFlowDeck = paramGetVarId("deck", "bcFlow2");
+	//paramVarId_t idFlowDeck = paramGetVarId("deck", "bcFlow2");
 	
 	// set self id for network
 	my_id = dtrGetSelfId();
-
-	// DEBUG_PRINT("Current ID: %d\n", my_id);
-
-	// DEBUG_PRINT("Network Topology: %d", topology.size);
-	// for (int i = 0; i < topology.size; i++){
-	// 	DEBUG_PRINT("%d ", topology.devices_ids[i]);
-	// }
-	// DEBUG_PRINT("\n");
 
 	// enable P2P DTR network
 	dtrEnableProtocol(topology);
@@ -147,35 +139,29 @@ void appMain(){
 	p2pRegisterCB(p2pcallbackHandler);
 
 	dtrPacket receivedPacket;
-	// float currentX;
-	// float currentY;
-	// float currentZ;
 
-	DEBUG_PRINT("First Kalman Filter Reset\n");
+
+	//DEBUG_PRINT("First Kalman Filter Reset\n");
 
 	// reset kalman filter
 	estimatorKalmanInit();
 
 	while(1){
 
-		uint8_t flowDeckOn = paramGetUint(idFlowDeck);
+		//uint8_t flowDeckOn = paramGetUint(idFlowDeck);
 
 		if(state==init){
 			// wait for command to start up from leader drone
 			// wait until a P2P DTR packet is received
 
 			if(dtrGetPacket(&receivedPacket, portMAX_DELAY)){
-				DEBUG_PRINT("Received data from %d : \n",receivedPacket.sourceId);
+				//DEBUG_PRINT("Received data from %d : \n",receivedPacket.sourceId);
 				estimatorKalmanInit();
 				
-				DEBUG_PRINT("Kalman Filter Reset\n");
 
-				if(flowDeckOn){
-					DEBUG_PRINT("x: %f, y: %f, z: %f\n", (double)logGetFloat(idFlowX), (double)logGetFloat(idFlowY), (double)logGetFloat(idFlowZ));
-				}
 
 				// received the start command from leader drone
-				if(receivedPacket.dataSize == 1 && receivedPacket.data[0] == START){
+				if(receivedPacket.dataSize == sizeof(int) && receivedPacket.data[0] == START && receivedPacket.sourceId == LEADER_ID){
 					DEBUG_PRINT("Received start command from leader\n");
 					state = standby;
 					setHoverSetpoint(&setpoint, 0, 0, 0.4, 0);
@@ -188,20 +174,19 @@ void appMain(){
 			//DEBUG_PRINT("Current State: standby\n");
 			// NOTE IMPORTANT TO KEEP DELAY NOT TOO FAST
 			vTaskDelay(10);
-			if(flowDeckOn){
-				DEBUG_PRINT("x: %f, y: %f, z: %f\n", (double)logGetFloat(idFlowX), (double)logGetFloat(idFlowY), (double)logGetFloat(idFlowZ));
-			}
 			setHoverSetpoint(&setpoint, 0, 0, 0.4, 0);
 			commanderSetSetpoint(&setpoint, 3);
 
 			if(dtrGetPacket(&receivedPacket, 10)){
-				if(receivedPacket.dataSize == 1 && receivedPacket.data[0] == SEND_DATA){
-					sendFollowerPosition((double)logGetFloat(idFlowX), (double)logGetFloat(idFlowY), (double)logGetFloat(idFlowZ));
-				} else if(receivedPacket.dataSize == 3 && ){
-
+				if(receivedPacket.dataSize == sizeof(int) && receivedPacket.data[0] == SEND_DATA && receivedPacket.sourceId == LEADER_ID){
+					sendFollowerPosition(logGetFloat(idFlowX), logGetFloat(idFlowY), logGetFloat(idFlowZ));
+				} else if(receivedPacket.dataSize == 3*sizeof(float)){
+					memcpy(&leaderX, &receivedPacket.data[0], sizeof(float));
+					memcpy(&leaderY, &receivedPacket.data[4], sizeof(float));
+					memcpy(&leaderZ, &receivedPacket.data[8], sizeof(float));
+					DEBUG_PRINT("Received packet from Leader drone\n");
+					DEBUG_PRINT("From %d x: %f, y: %f, z: %f\n", receivedPacket.sourceId, (double)leaderX, (double)leaderY, (double)leaderZ);
 				}
-				DEBUG_PRINT("Received packet from Leader drone\n");
-				DEBUG_PRINT("From %d x: %f, y: %f, z: %f\n", receivedPacket.sourceId, receivedPacket.data[0], receivedPacket.data[1], receivedPacket.data[2]);
 			}
 
 		} else if(state==square_formation){
