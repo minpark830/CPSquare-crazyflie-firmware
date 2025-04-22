@@ -21,19 +21,7 @@ The same wallfollowing strategy was used in the following paper:
  #include <math.h>
  
  // variables
- typedef enum {
-  square,
-  rhombus,
-  triangle
-} Command;
-  
-
- typedef enum {
-  leader,
-  follower_1,
-  follower_2,
-  follower_3
-} currentDrone;
+ 
 
   static currentDrone drone = leader;
   static Command command = square;
@@ -54,7 +42,7 @@ The same wallfollowing strategy was used in the following paper:
  float relative_position_y = 0.0;
  
  
-void initDesiredPosition(commandouter,positionouter){
+void initDesiredPosition(currentDrone commandouter, Command positionouter){
   command = commandouter;
   drone = positionouter;
   switch (command) {

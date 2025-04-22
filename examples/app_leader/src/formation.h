@@ -10,25 +10,23 @@
  #include <stdint.h>
  #include <stdbool.h>
  
- typedef enum
- {
-     forward,
-     hover,
-     turnToFindWall,
-     turnToAlignToWall,
-     forwardAlongWall,
-     rotateAroundWall,
-     rotateInCorner,
-     findCorner
- } StateWF;
+ typedef enum {
+    square,
+    rhombus,
+    triangle
+  } Command;
+    
+  
+   typedef enum {
+    leader,
+    follower_1,
+    follower_2,
+    follower_3
+  } currentDrone;
+
+ void initDesiredPosition(currentDrone commandouter, Command positionouter);
  
- StateWF wallFollower(float *cmdVelX, float *cmdVelY, float *cmdAngW, float frontRange, float sideRange, float currentHeading,
-    int directionTurn, float timeOuter, float position_leader_x, float position_leader_y,float relative_positions_x,
-    float relative_positions_y, float leader_yaw, float yaw);
- 
-static void commandForwardInFormationVelocity(float position_leader_x, float position_leader_y, float leader_yaw, 
-    float *yaw, float *mylocation_x,float *mylocation_y);
- 
- void wallFollowerInit(float refDistanceFromWallNew, float maxForwardSpeed_ref, StateWF initState);
+ void calculatePosition(float position_leader_x, float position_leader_y, float leader_yaw, 
+    float *yaw, float *mylocation_x,float *mylocation_y, float timeNow);
  #endif /* SRC_WALLFOLLOWING_MULTIRANGER_ONBOARD_H_ */
  
