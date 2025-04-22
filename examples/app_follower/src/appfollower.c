@@ -29,11 +29,13 @@
 
 #define START 1
 #define SEND_DATA 2
+#define LAND 3
 
 typedef enum {
   init,
   standby,
-  square_formation
+  square_formation,
+  landing
 } State;
 
 typedef enum {
@@ -60,6 +62,8 @@ static dtrTopology topology = NETWORK_TOPOLOGY;
 static float leaderX;
 static float leaderY;
 static float leaderZ;
+
+static int command;
 
 
 // leader starts in init state
@@ -178,9 +182,19 @@ void appMain(){
 			commanderSetSetpoint(&setpoint, 3);
 
 			if(dtrGetPacket(&receivedPacket, 10)){
-				if(receivedPacket.dataSize == sizeof(int) && receivedPacket.data[0] == SEND_DATA && receivedPacket.sourceId == LEADER_ID){
-					sendFollowerPosition(logGetFloat(idFlowX), logGetFloat(idFlowY), logGetFloat(idFlowZ));
-				} else if(receivedPacket.dataSize == 3*sizeof(float)){
+				if(receivedPacket.dataSize == sizeof(int) && receivedPacket.sourceId == LEADER_ID && receivedPacket.targetId == my_id){
+					memcpy(&command, &receivedPacket.data[0], sizeof(int));
+					DEBUG_PRINT("Command is %d\n", command);
+					switch(command){
+						case SEND_DATA:
+							DEBUG_PRINT("Send Data to Leader\n");
+							sendFollowerPosition(logGetFloat(idFlowX), logGetFloat(idFlowY), logGetFloat(idFlowZ));	
+							break;
+						case LAND:
+							state = landing;
+							break;
+					}
+				} else if(receivedPacket.dataSize == 3*sizeof(float) && receivedPacket.sourceId == LEADER_ID && receivedPacket.targetId == my_id){
 					memcpy(&leaderX, &receivedPacket.data[0], sizeof(float));
 					memcpy(&leaderY, &receivedPacket.data[4], sizeof(float));
 					memcpy(&leaderZ, &receivedPacket.data[8], sizeof(float));
@@ -191,6 +205,13 @@ void appMain(){
 
 		} else if(state==square_formation){
 
+		} else if(state==landing){
+			DEBUG_PRINT("Current State: landing\n");
+
+			vTaskDelay(10);
+			setHoverSetpoint(&setpoint, logGetFloat(idFlowX), logGetFloat(idFlowY), 0.1, 0);
+			commanderSetSetpoint(&setpoint, 3);
+			state = init;
 		} else{
 
 		}

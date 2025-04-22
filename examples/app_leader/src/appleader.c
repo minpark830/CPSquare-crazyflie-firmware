@@ -38,6 +38,7 @@
 
 #define START 1
 #define SEND_DATA 2
+#define LAND 3
 
 // store current id of drone in P2P DTR network
 static uint8_t my_id;
@@ -204,7 +205,8 @@ typedef enum {
   leader,
   follower_1,
   follower_2,
-  follower_3
+  follower_3,
+  leader_send
 } currentDrone;
 
 // store current id of drone in P2P DTR network
@@ -359,8 +361,6 @@ void appMain() {
           break;
       }
 
-      sendLeaderPosition(0xFF, logGetFloat(idFlowX), logGetFloat(idFlowY), logGetFloat(idFlowZ));
-
       if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), 0)) {
         command = (int)rxPacket.command;
 
@@ -430,8 +430,8 @@ void appMain() {
           break;
         case follower_1:
           if(dtrGetPacket(&receivedPacket, 10)){
-            DEBUG_PRINT("Received packet from Follower drone\n");
-            if(receivedPacket.dataSize == 3*sizeof(float) && receivedPacket.sourceId == FOLLOWER_1_ID){
+            DEBUG_PRINT("Received packet from Follower 1 drone\n");
+            if(receivedPacket.dataSize == 3*sizeof(float) && receivedPacket.sourceId == FOLLOWER_1_ID && receivedPacket.targetId == my_id){
               memcpy(&receivedX, &receivedPacket.data[0], sizeof(float));
               memcpy(&receivedY, &receivedPacket.data[4], sizeof(float));
               memcpy(&receivedZ, &receivedPacket.data[8], sizeof(float));
@@ -445,25 +445,31 @@ void appMain() {
           break;
         case follower_2:
           if(dtrGetPacket(&receivedPacket, 10)){
-            DEBUG_PRINT("Received packet from Follower drone\n");
-            if(receivedPacket.dataSize == 3*sizeof(float) && receivedPacket.sourceId == FOLLOWER_2_ID){
+            DEBUG_PRINT("Received packet from Follower 2 drone\n");
+            if(receivedPacket.dataSize == 3*sizeof(float) && receivedPacket.sourceId == FOLLOWER_2_ID && receivedPacket.targetId == my_id){
               memcpy(&receivedX, &receivedPacket.data[0], sizeof(float));
               memcpy(&receivedY, &receivedPacket.data[4], sizeof(float));
               memcpy(&receivedZ, &receivedPacket.data[8], sizeof(float));
 
               transmitData(&txPacket, FOLLOWER_2_ID, receivedX, receivedY, receivedZ);
               DEBUG_PRINT("x: %f, y: %f, z: %f\n", (double)receivedX, (double)receivedY, (double)receivedZ);
-              drone = leader;
+              drone = leader_send;
             } 
           }
           break;
         case follower_3:
+          break;
+        case leader_send:
+          sendLeaderPosition(0xFF, logGetFloat(idFlowX), logGetFloat(idFlowY), logGetFloat(idFlowZ));
+          drone = leader;
           break;
       }
 
     } else if(state == landing){
       // for some reason landing produces a lock and reboot required for supervisor
       DEBUG_PRINT("Current State: landing\n");
+
+      sendCommandToFollower(0xFF,LAND);
 
       vTaskDelay(10);
       setHoverSetpoint(&setpoint, logGetFloat(idFlowX), logGetFloat(idFlowY), 0.1, 0);
