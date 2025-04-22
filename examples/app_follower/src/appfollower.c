@@ -35,7 +35,8 @@ typedef enum {
   init,
   standby,
   square_formation,
-  landing
+  landing,
+  grounded
 } State;
 
 typedef enum {
@@ -161,11 +162,9 @@ void appMain(){
 			if(dtrGetPacket(&receivedPacket, portMAX_DELAY)){
 				//DEBUG_PRINT("Received data from %d : \n",receivedPacket.sourceId);
 				estimatorKalmanInit();
-				
-
-
 				// received the start command from leader drone
 				if(receivedPacket.dataSize == sizeof(int) && receivedPacket.data[0] == START && receivedPacket.sourceId == LEADER_ID){
+					
 					DEBUG_PRINT("Received start command from leader\n");
 					state = standby;
 					setHoverSetpoint(&setpoint, 0, 0, 0.4, 0);
@@ -188,6 +187,7 @@ void appMain(){
 					switch(command){
 						case SEND_DATA:
 							DEBUG_PRINT("Send Data to Leader\n");
+							DEBUG_PRINT("x: %f, y: %f, z: %f\n", (double)logGetFloat(idFlowX), (double)logGetFloat(idFlowY), (double)logGetFloat(idFlowZ));
 							sendFollowerPosition(logGetFloat(idFlowX), logGetFloat(idFlowY), logGetFloat(idFlowZ));	
 							break;
 						case LAND:
@@ -211,7 +211,9 @@ void appMain(){
 			vTaskDelay(10);
 			setHoverSetpoint(&setpoint, logGetFloat(idFlowX), logGetFloat(idFlowY), 0.1, 0);
 			commanderSetSetpoint(&setpoint, 3);
-			state = init;
+			state = grounded;
+		} else if(state==grounded){
+			DEBUG_PRINT("Current State: grounded\n");
 		} else{
 
 		}

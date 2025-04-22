@@ -184,7 +184,8 @@ typedef enum {
   going_forward,
   stopping,
   rhombus_formation,
-  triangle_formation
+  triangle_formation,
+  grounded
 } State;
 
 typedef enum {
@@ -471,11 +472,19 @@ void appMain() {
 
       sendCommandToFollower(0xFF,LAND);
 
-      vTaskDelay(10);
-      setHoverSetpoint(&setpoint, logGetFloat(idFlowX), logGetFloat(idFlowY), 0.1, 0);
-      commanderSetSetpoint(&setpoint, 3);
-      state = init;
+      for(int i=0;i<3;i++){
+        vTaskDelay(10);
+        setHoverSetpoint(&setpoint, logGetFloat(idFlowX), logGetFloat(idFlowY), 0.1, 0);
+        commanderSetSetpoint(&setpoint, 3);
+      }
+      state = grounded;
 
+    } else if(state == grounded){
+      DEBUG_PRINT("Current State: grounded\n");
+
+      vTaskDelay(10);
+      memset(&setpoint, 0, sizeof(setpoint_t));
+      commanderSetSetpoint(&setpoint, 3);
     } else{
 
       DEBUG_PRINT("ERROR WITH STATE HANDLING\n");
