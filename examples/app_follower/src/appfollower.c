@@ -36,8 +36,7 @@ typedef enum {
   init,
   standby,
   square_formation,
-  landing,
-  grounded
+  landing
 } State;
 
 typedef enum {
@@ -213,14 +212,16 @@ void appMain(){
 
 			switch(my_id){
 				case FOLLOWER_1_ID:
-					newX = leaderX + logGetFloat(idFlowX) + 0.5f;
-					newY = leaderY + logGetFloat(idFlowY);
+					newX = leaderX + 0.5f;
+					newY = leaderY;
 					break;
 				case FOLLOWER_2_ID:
-					newX = leaderX + logGetFloat(idFlowX);
-					newY = leaderY + logGetFloat(idFlowX) + 0.5f;
+					newX = leaderX;
+					newY = leaderY + 0.5f;
 					break;
 				case FOLLOWER_3_ID:
+					newX = leaderX + 0.5f;
+					newY = leaderY + 0.5f;
 					break;
 			}
 
@@ -258,9 +259,7 @@ void appMain(){
 			vTaskDelay(10);
 			setHoverSetpoint(&setpoint, logGetFloat(idFlowX), logGetFloat(idFlowY), 0.1, 0);
 			commanderSetSetpoint(&setpoint, 3);
-			state = grounded;
-		} else if(state==grounded){
-			DEBUG_PRINT("Current State: grounded\n");
+			state = init;
 		} else{
 
 		}
