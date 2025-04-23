@@ -28,7 +28,7 @@
 #define DEBUG_MODULE "APPLEADER"
 
 // define the ids of each node in the network
-#define NETWORK_TOPOLOGY {.size = 3, .devices_ids = {231, 230, 232} } // Maximum size of network is 20 by default
+#define NETWORK_TOPOLOGY {.size = 2, .devices_ids = {231, 232} } // Maximum size of network is 20 by default
 //#define NETWORK_TOPOLOGY {.size = 4, .devices_ids = {0, 1, 2, 3} } // Maximum size of network is 20 by default
 
 #define LEADER_ID 231
@@ -143,6 +143,7 @@ void sendLeaderPosition(int targetID, float x, float y, float z){
 
 // function to load/send transmit packet so it transmit command to follower drone
 void sendCommandToFollower(int targetID, int command){
+  DEBUG_PRINT("trying to send command\n");
   dtrPacket transmitSignal;
   transmitSignal.messageType = DATA_FRAME;
   transmitSignal.sourceId = my_id;
@@ -223,7 +224,7 @@ static State state = init;
 // leader starts in nothing command
 static Command command = nothing;
 
-static currentDrone drone = leader;
+static currentDrone drone = init_send;
 
 static float receivedX;
 static float receivedY;
@@ -271,7 +272,7 @@ void appMain() {
 
     if(state==init) {
 
-      //DEBUG_PRINT("Current State: init\n");
+      DEBUG_PRINT("Current State: init\n");
 
       // wait for start command from the computer 
       // note it is important to keep this one as APPCHANNEL_WAIT_FOREVER for some reason
@@ -297,10 +298,10 @@ void appMain() {
 
     } else if(state == standby){
 
-      //DEBUG_PRINT("Current State: standby\n");
+      DEBUG_PRINT("Current State: standby\n");
 
       // it seems delay is required from the crazyflie from crashing
-      vTaskDelay(10);
+      vTaskDelay(30);
       setHoverSetpoint(&setpoint, 0, 0, 0.5, 0);
       commanderSetSetpoint(&setpoint, 3);
 
@@ -313,17 +314,17 @@ void appMain() {
           case square:
             state = square_formation;
             previousCommand = nothing;
-            drone = leader;
+            drone = init_send;
             break;
           case rhombus:
             state = rhombus_formation;
             previousCommand = nothing;
-            drone = leader;
+            drone = init_send;
             break;
           case triangle:
             state = triangle_formation;
             previousCommand = nothing;
-            drone = leader;
+            drone = init_send;
             break;
           case land:
             state = landing;
@@ -428,7 +429,7 @@ void appMain() {
         case init_send:
           // send all followers the square formation command
           sendCommandToFollower(0xFF, SQUARE_FORM);
-          state = leader;
+          drone = leader;
           break;
         case leader:
           // send leader position to app
@@ -449,7 +450,7 @@ void appMain() {
               transmitData(&txPacket, FOLLOWER_1_ID, receivedX, receivedY, receivedZ);
               DEBUG_PRINT("x: %f, y: %f, z: %f\n", (double)receivedX, (double)receivedY, (double)receivedZ);
               sendCommandToFollower(FOLLOWER_2_ID, SEND_DATA);
-              drone = follower_2;
+              drone = leader_send;
             } 
           }
           break;

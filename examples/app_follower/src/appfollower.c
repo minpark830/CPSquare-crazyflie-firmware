@@ -47,7 +47,7 @@ typedef enum {
 } Command;
 
 // define the ids of each node in the network
-#define NETWORK_TOPOLOGY {.size = 3, .devices_ids = {231, 230, 232} } // Maximum size of network is 20 by default
+#define NETWORK_TOPOLOGY {.size = 2, .devices_ids = {231, 232} } // Maximum size of network is 20 by default
 //#define NETWORK_TOPOLOGY {.size = 4, .devices_ids = {0, 1, 2, 3} } // Maximum size of network is 20 by default
 
 #define LEADER_ID 231
