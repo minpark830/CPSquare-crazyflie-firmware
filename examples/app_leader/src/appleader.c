@@ -223,7 +223,7 @@ static State state = init;
 // leader starts in nothing command
 static Command command = nothing;
 
-static currentDrone drone = leader;
+static currentDrone drone = init_send;
 
 static float receivedX;
 static float receivedY;
@@ -313,17 +313,17 @@ void appMain() {
           case square:
             state = square_formation;
             previousCommand = nothing;
-            drone = leader;
+            drone = init_send;
             break;
           case rhombus:
             state = rhombus_formation;
             previousCommand = nothing;
-            drone = leader;
+            drone = init_send;
             break;
           case triangle:
             state = triangle_formation;
             previousCommand = nothing;
-            drone = leader;
+            drone = init_send;
             break;
           case land:
             state = landing;
