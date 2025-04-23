@@ -219,7 +219,7 @@ class App:
         if (1):
             self.currentLeader = 'radio://0/80/2M/E7E7E7E7E7'
             self.leader_label.config(text=f"Current Leader: {self.currentLeader}")
-            self.cf.open_link('radio://0/80/2M/E7E7E7E7E7?rate_limit=100')
+            self.cf.open_link('radio://0/80/2M/E7E7E7E7E7?rate_limit=50')
         else:
             print("Error", "No Crazyflies found, cannot run example")
 

@@ -30,6 +30,7 @@
 #define START 1
 #define SEND_DATA 2
 #define LAND 3
+#define SQUARE_FORM 4
 
 typedef enum {
   init,
@@ -51,6 +52,9 @@ typedef enum {
 //#define NETWORK_TOPOLOGY {.size = 4, .devices_ids = {0, 1, 2, 3} } // Maximum size of network is 20 by default
 
 #define LEADER_ID 231
+#define FOLLOWER_1_ID 232
+#define FOLLOWER_2_ID 230
+#define FOLLOWER_3_ID 233
 
 // store current id of drone in P2P DTR network
 static uint8_t my_id;
@@ -174,11 +178,56 @@ void appMain(){
 			
 		} else if(state==standby){
 
-			//DEBUG_PRINT("Current State: standby\n");
+			DEBUG_PRINT("Current State: standby\n");
 			// NOTE IMPORTANT TO KEEP DELAY NOT TOO FAST
 			vTaskDelay(10);
 			setHoverSetpoint(&setpoint, 0, 0, 0.4, 0);
 			commanderSetSetpoint(&setpoint, 3);
+
+			if(dtrGetPacket(&receivedPacket, 10)){
+				if(receivedPacket.dataSize == sizeof(int) && receivedPacket.sourceId == LEADER_ID && receivedPacket.targetId == my_id){
+					memcpy(&command, &receivedPacket.data[0], sizeof(int));
+					DEBUG_PRINT("Command is %d\n", command);
+					switch(command){
+						case SQUARE_FORM:
+							state = square_formation;
+							break;
+						case LAND:
+							state = landing;
+							break;
+					}
+				} else if(receivedPacket.dataSize == 3*sizeof(float) && receivedPacket.sourceId == LEADER_ID && receivedPacket.targetId == my_id){
+					memcpy(&leaderX, &receivedPacket.data[0], sizeof(float));
+					memcpy(&leaderY, &receivedPacket.data[4], sizeof(float));
+					memcpy(&leaderZ, &receivedPacket.data[8], sizeof(float));
+					DEBUG_PRINT("Received packet from Leader drone\n");
+					DEBUG_PRINT("From %d x: %f, y: %f, z: %f\n", receivedPacket.sourceId, (double)leaderX, (double)leaderY, (double)leaderZ);
+				}
+			}
+
+		} else if(state==square_formation){
+
+			DEBUG_PRINT("Current State: square_formation\n");
+			float newX = 0;
+			float newY = 0;
+
+			switch(my_id){
+				case FOLLOWER_1_ID:
+					newX = leaderX + logGetFloat(idFlowX) + 0.5f;
+					newY = leaderY + logGetFloat(idFlowY);
+					break;
+				case FOLLOWER_2_ID:
+					newX = leaderX + logGetFloat(idFlowX);
+					newY = leaderY + logGetFloat(idFlowX) + 0.5f;
+					break;
+				case FOLLOWER_3_ID:
+					break;
+			}
+
+			vTaskDelay(10);
+			setHoverSetpoint(&setpoint, newX, newY, 0.4, 0);
+			commanderSetSetpoint(&setpoint, 3);
+
 
 			if(dtrGetPacket(&receivedPacket, 10)){
 				if(receivedPacket.dataSize == sizeof(int) && receivedPacket.sourceId == LEADER_ID && receivedPacket.targetId == my_id){
@@ -202,8 +251,6 @@ void appMain(){
 					DEBUG_PRINT("From %d x: %f, y: %f, z: %f\n", receivedPacket.sourceId, (double)leaderX, (double)leaderY, (double)leaderZ);
 				}
 			}
-
-		} else if(state==square_formation){
 
 		} else if(state==landing){
 			DEBUG_PRINT("Current State: landing\n");

@@ -185,8 +185,7 @@ typedef enum {
   going_forward,
   stopping,
   rhombus_formation,
-  triangle_formation,
-  grounded
+  triangle_formation
 } State;
 
 typedef enum {
@@ -208,7 +207,8 @@ typedef enum {
   follower_1,
   follower_2,
   follower_3,
-  leader_send
+  leader_send,
+  init_send
 } currentDrone;
 
 // store current id of drone in P2P DTR network
@@ -285,6 +285,7 @@ void appMain() {
             state = standby;
             setHoverSetpoint(&setpoint, 0, 0, 0.5, 0);
             commanderSetSetpoint(&setpoint, 3);
+            sendCommandToFollower(0xFF,START);
             break;
           default:
             DEBUG_PRINT("NO VALID COMMAND SENT FOR STATE: init\n");
@@ -304,7 +305,7 @@ void appMain() {
       if (appchannelReceiveDataPacket(&rxPacket, sizeof(rxPacket), 0)) {
         command = (int)rxPacket.command;
 
-        sendCommandToFollower(0xFF,START);
+        sendLeaderPosition(0xFF, logGetFloat(idFlowX), logGetFloat(idFlowY), logGetFloat(idFlowZ));
 
         switch (command) {
           case square:
@@ -422,6 +423,11 @@ void appMain() {
       }
       
       switch(drone){
+        case init_send:
+          // send all followers the square formation command
+          sendCommandToFollower(0xFF, SQUARE_FORM);
+          state = leader;
+          break;
         case leader:
           // send leader position to app
           transmitData(&txPacket, my_id, logGetFloat(idFlowX), logGetFloat(idFlowY), logGetFloat(idFlowZ));
@@ -473,19 +479,11 @@ void appMain() {
 
       sendCommandToFollower(0xFF,LAND);
 
-      for(int i=0;i<3;i++){
-        vTaskDelay(10);
-        setHoverSetpoint(&setpoint, logGetFloat(idFlowX), logGetFloat(idFlowY), 0.1, 0);
-        commanderSetSetpoint(&setpoint, 3);
-      }
-      state = grounded;
-
-    } else if(state == grounded){
-      DEBUG_PRINT("Current State: grounded\n");
-
       vTaskDelay(10);
-      memset(&setpoint, 0, sizeof(setpoint_t));
+      setHoverSetpoint(&setpoint, logGetFloat(idFlowX), logGetFloat(idFlowY), 0.1, 0);
       commanderSetSetpoint(&setpoint, 3);
+      state = init;
+
     } else{
 
       DEBUG_PRINT("ERROR WITH STATE HANDLING\n");
