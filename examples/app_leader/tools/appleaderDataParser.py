@@ -13,19 +13,39 @@ def load_pickle_data(file_path):
 
 def plot_data(data):
     try:
-        id, x, y, z = zip(*data)
-        
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
+        # Mapping of IDs to roles and colors
+        role_info = {
+            231: ("Leader", 'blue'),
+            232: ("Follower 1", 'green'),
+            230: ("Follower 2", 'red'),
+            233: ("Follower 3", 'orange')
+        }
 
-        scatter = ax.scatter(x, y, z, c=id, cmap='viridis', marker='o')
-        fig.colorbar(scatter, label='ID')
+        # Group data by ID
+        grouped_data = {id_: [] for id_ in role_info}
 
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('Z')
+        for id_, x, y, z in data:
+            if id_ in grouped_data:
+                grouped_data[id_].append((x, y, z))
+
+        fig = plt.figure(facecolor='white')
+        ax = fig.add_subplot(111, projection='3d', facecolor='white')
+
+        # Plot each role
+        for id_, points in grouped_data.items():
+            if points:
+                xs, ys, zs = zip(*points)
+                label, color = role_info[id_]
+                ax.scatter(xs, ys, zs, label=label, color=color, marker='o')
+
+        ax.set_xlabel('X axis [m]')
+        ax.set_ylabel('Y axis [m]')
+        ax.set_zlabel('Z axis [m]')
+        ax.grid(True)
         plt.title("3D Plot from Pickle Data")
+        ax.legend(title="Role")
         plt.show()
+
     except Exception as e:
         messagebox.showerror("Error", f"Failed to plot data:\n{e}")
 

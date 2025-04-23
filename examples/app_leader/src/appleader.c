@@ -39,6 +39,7 @@
 #define START 1
 #define SEND_DATA 2
 #define LAND 3
+#define SQUARE_FORM 4
 
 // store current id of drone in P2P DTR network
 static uint8_t my_id;
