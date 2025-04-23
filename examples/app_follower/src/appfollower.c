@@ -141,6 +141,8 @@ void appMain(){
 	// enable P2P DTR network
 	dtrEnableProtocol(topology);
 
+	DEBUG_PRINT("ID: %d\n", my_id);
+
 	vTaskDelay(2000);
 
 	// register the callback function so that the CF can receive packets as well

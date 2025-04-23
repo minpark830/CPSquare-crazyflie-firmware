@@ -252,6 +252,8 @@ void appMain() {
 	// enable P2P DTR network
 	dtrEnableProtocol(topology);
 
+  DEBUG_PRINT("ID: %d\n", my_id);
+
   vTaskDelay(2000);
   // register the callback function so that the CF can receive packets as well
 	p2pRegisterCB(p2pcallbackHandler);
@@ -269,7 +271,7 @@ void appMain() {
 
     if(state==init) {
 
-      DEBUG_PRINT("Current State: init\n");
+      //DEBUG_PRINT("Current State: init\n");
 
       // wait for start command from the computer 
       // note it is important to keep this one as APPCHANNEL_WAIT_FOREVER for some reason
@@ -295,7 +297,7 @@ void appMain() {
 
     } else if(state == standby){
 
-      DEBUG_PRINT("Current State: standby\n");
+      //DEBUG_PRINT("Current State: standby\n");
 
       // it seems delay is required from the crazyflie from crashing
       vTaskDelay(10);
@@ -475,7 +477,7 @@ void appMain() {
 
     } else if(state == landing){
       // for some reason landing produces a lock and reboot required for supervisor
-      DEBUG_PRINT("Current State: landing\n");
+      //DEBUG_PRINT("Current State: landing\n");
 
       sendCommandToFollower(0xFF,LAND);
 
