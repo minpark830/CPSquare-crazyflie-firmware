@@ -214,16 +214,16 @@ void appMain(){
 
 			switch(my_id){
 				case FOLLOWER_1_ID:
-					newX = leaderX + 0.5f;
+					newX = leaderX + 0.2f;
 					newY = leaderY;
 					break;
 				case FOLLOWER_2_ID:
 					newX = leaderX;
-					newY = leaderY + 0.5f;
+					newY = leaderY - 0.2f;
 					break;
 				case FOLLOWER_3_ID:
-					newX = leaderX + 0.5f;
-					newY = leaderY + 0.5f;
+					newX = leaderX + 0.2f;
+					newY = leaderY - 0.2f;
 					break;
 			}
 
