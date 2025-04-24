@@ -450,7 +450,7 @@ void appMain() {
               transmitData(&txPacket, FOLLOWER_1_ID, receivedX, receivedY, receivedZ);
               DEBUG_PRINT("x: %f, y: %f, z: %f\n", (double)receivedX, (double)receivedY, (double)receivedZ);
               sendCommandToFollower(FOLLOWER_2_ID, SEND_DATA);
-              drone = leader_send;
+              drone = follower_2;
             } 
           }
           break;
