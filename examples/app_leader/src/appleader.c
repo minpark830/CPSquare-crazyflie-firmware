@@ -28,7 +28,7 @@
 #define DEBUG_MODULE "APPLEADER"
 
 // define the ids of each node in the network
-#define NETWORK_TOPOLOGY {.size = 2, .devices_ids = {231, 232} } // Maximum size of network is 20 by default
+#define NETWORK_TOPOLOGY {.size = 3, .devices_ids = {231, 232, 230} } // Maximum size of network is 20 by default
 //#define NETWORK_TOPOLOGY {.size = 4, .devices_ids = {0, 1, 2, 3} } // Maximum size of network is 20 by default
 
 #define LEADER_ID 231
@@ -301,7 +301,7 @@ void appMain() {
       DEBUG_PRINT("Current State: standby\n");
 
       // it seems delay is required from the crazyflie from crashing
-      vTaskDelay(30);
+      vTaskDelay(10);
       setHoverSetpoint(&setpoint, 0, 0, 0.5, 0);
       commanderSetSetpoint(&setpoint, 3);
 

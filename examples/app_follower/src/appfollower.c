@@ -47,7 +47,7 @@ typedef enum {
 } Command;
 
 // define the ids of each node in the network
-#define NETWORK_TOPOLOGY {.size = 2, .devices_ids = {231, 232} } // Maximum size of network is 20 by default
+#define NETWORK_TOPOLOGY {.size = 3, .devices_ids = {231, 232, 230} } // Maximum size of network is 20 by default
 //#define NETWORK_TOPOLOGY {.size = 4, .devices_ids = {0, 1, 2, 3} } // Maximum size of network is 20 by default
 
 #define LEADER_ID 231
@@ -172,7 +172,7 @@ void appMain(){
 					
 					DEBUG_PRINT("Received start command from leader\n");
 					state = standby;
-					setHoverSetpoint(&setpoint, 0, 0, 0.4, 0);
+					setHoverSetpoint(&setpoint, 0, 0, 0.5, 0);
 					commanderSetSetpoint(&setpoint, 3);
 				}
 			} 
@@ -182,7 +182,7 @@ void appMain(){
 			DEBUG_PRINT("Current State: standby\n");
 			// NOTE IMPORTANT TO KEEP DELAY NOT TOO FAST
 			vTaskDelay(10);
-			setHoverSetpoint(&setpoint, 0, 0, 0.4, 0);
+			setHoverSetpoint(&setpoint, 0, 0, 0.5, 0);
 			commanderSetSetpoint(&setpoint, 3);
 
 			if(dtrGetPacket(&receivedPacket, 10)){
@@ -228,7 +228,7 @@ void appMain(){
 			}
 
 			vTaskDelay(10);
-			setHoverSetpoint(&setpoint, newX, newY, 0.4, 0);
+			setHoverSetpoint(&setpoint, newX, newY, 0.5, 0);
 			commanderSetSetpoint(&setpoint, 3);
 
 
