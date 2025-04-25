@@ -206,8 +206,8 @@ void appMain(){
 
 			DEBUG_PRINT("Current State: square_formation\n");
 
-			float newX = leaderX + 0.5f;
-			float newY = leaderY;
+			float newX = leaderX;
+			float newY = leaderY + 0.5f;
 
 			vTaskDelay(10);
 			setHoverSetpoint(&setpoint, newX, newY, 0.5, 0);
