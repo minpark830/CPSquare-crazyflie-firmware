@@ -46,7 +46,7 @@ class App:
 
         self.root = root
         self.root.title("CPSquare Crazyflie Psuedo Leader Experimental Framework")
-        start_path = os.path.join(os.getcwd(), "examples", "app_leader", "tools", "cpsquare-logo-2.png")
+        start_path = os.path.join(os.getcwd(), "examples", "app_leader_web", "tools", "cpsquare-logo-2.png")
         print(start_path)
         
         img = Image.open(start_path)  # Replace with the path to your image

@@ -189,11 +189,9 @@ typedef enum {
 } Command;
 
 typedef enum {
-  leader,
-  follower_1,
   follower_2,
   follower_3,
-  leader_send,
+  follower_2_send,
   init_send
 } currentDrone;
 
@@ -414,50 +412,33 @@ void appMain() {
         case init_send:
           // send all followers the square formation command
           sendCommandToFollower(0xFF, SQUARE_FORM);
-          drone = leader;
-          break;
-        case leader:
-          // send leader position to app
-          transmitData(&txPacket, my_id, logGetFloat(idFlowX), logGetFloat(idFlowY), logGetFloat(idFlowZ));
-          drone = follower_1;
-
-          // send follower 1 drone command to send position to leader
-          sendCommandToFollower(FOLLOWER_1_ID, SEND_DATA);
-          break;
-        case follower_1:
-          if(dtrGetPacket(&receivedPacket, 10)){
-            DEBUG_PRINT("Received packet from Follower 1 drone\n");
-            if(receivedPacket.dataSize == 3*sizeof(float) && receivedPacket.sourceId == FOLLOWER_1_ID && receivedPacket.targetId == my_id){
-              memcpy(&receivedX, &receivedPacket.data[0], sizeof(float));
-              memcpy(&receivedY, &receivedPacket.data[4], sizeof(float));
-              memcpy(&receivedZ, &receivedPacket.data[8], sizeof(float));
-
-              transmitData(&txPacket, FOLLOWER_1_ID, receivedX, receivedY, receivedZ);
-              DEBUG_PRINT("x: %f, y: %f, z: %f\n", (double)receivedX, (double)receivedY, (double)receivedZ);
-              sendCommandToFollower(FOLLOWER_2_ID, SEND_DATA);
-              drone = leader_send;
-            } 
-          }
+          drone = follower_2;
           break;
         case follower_2:
+          // send leader position to app
+          transmitData(&txPacket, my_id, logGetFloat(idFlowX), logGetFloat(idFlowY), logGetFloat(idFlowZ));
+          drone = follower_3;
+
+          // send follower 1 drone command to send position to leader
+          sendCommandToFollower(FOLLOWER_3_ID, SEND_DATA);
+          break;
+        case follower_3:
           if(dtrGetPacket(&receivedPacket, 10)){
-            DEBUG_PRINT("Received packet from Follower 2 drone\n");
-            if(receivedPacket.dataSize == 3*sizeof(float) && receivedPacket.sourceId == FOLLOWER_2_ID && receivedPacket.targetId == my_id){
+            DEBUG_PRINT("Received packet from Follower 1 drone\n");
+            if(receivedPacket.dataSize == 3*sizeof(float) && receivedPacket.sourceId == FOLLOWER_3_ID && receivedPacket.targetId == my_id){
               memcpy(&receivedX, &receivedPacket.data[0], sizeof(float));
               memcpy(&receivedY, &receivedPacket.data[4], sizeof(float));
               memcpy(&receivedZ, &receivedPacket.data[8], sizeof(float));
 
-              transmitData(&txPacket, FOLLOWER_2_ID, receivedX, receivedY, receivedZ);
+              transmitData(&txPacket, FOLLOWER_3_ID, receivedX, receivedY, receivedZ);
               DEBUG_PRINT("x: %f, y: %f, z: %f\n", (double)receivedX, (double)receivedY, (double)receivedZ);
-              drone = leader_send;
+              drone = follower_2_send;
             } 
           }
           break;
-        case follower_3:
-          break;
-        case leader_send:
+        case follower_2_send:
           sendLeaderPosition(0xFF, logGetFloat(idFlowX), logGetFloat(idFlowY), logGetFloat(idFlowZ));
-          drone = leader;
+          drone = follower_2;
           break;
       }
 
