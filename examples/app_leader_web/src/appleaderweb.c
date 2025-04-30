@@ -443,6 +443,8 @@ void appMain() {
           break;
       }
 
+    } else if(state == rhombus_formation){
+      
     } else if(state == landing){
       // for some reason landing produces a lock and reboot required for supervisor
       //DEBUG_PRINT("Current State: landing\n");

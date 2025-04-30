@@ -46,10 +46,10 @@ typedef enum {
 } Command;
 
 // define the ids of each node in the network
-#define NETWORK_TOPOLOGY {.size = 2, .devices_ids = {230, 231} } // Maximum size of network is 20 by default
+#define NETWORK_TOPOLOGY {.size = 2, .devices_ids = {232, 233} } // Maximum size of network is 20 by default
 
-#define LEADER_ID 230
-#define FOLLOWER_1_ID 231
+#define FOLLOWER_2_ID 232
+#define FOLLOWER_3_ID 233
 
 // store current id of drone in P2P DTR network
 static uint8_t my_id;
@@ -94,7 +94,7 @@ void sendFollowerPosition(float x, float y, float z){
 	dtrPacket transmitSignal;
 	transmitSignal.messageType = DATA_FRAME;
 	transmitSignal.sourceId = my_id;
-	transmitSignal.targetId = LEADER_ID;
+	transmitSignal.targetId = FOLLOWER_2_ID;
 	
 	memcpy(&transmitSignal.data[0], &x, sizeof(float));         
 	memcpy(&transmitSignal.data[4], &y, sizeof(float));         
@@ -164,7 +164,7 @@ void appMain(){
 				//DEBUG_PRINT("Received data from %d : \n",receivedPacket.sourceId);
 				estimatorKalmanInit();
 				// received the start command from leader drone
-				if(receivedPacket.dataSize == sizeof(int) && receivedPacket.data[0] == START && receivedPacket.sourceId == LEADER_ID){
+				if(receivedPacket.dataSize == sizeof(int) && receivedPacket.data[0] == START && receivedPacket.sourceId == FOLLOWER_2_ID){
 					
 					DEBUG_PRINT("Received start command from leader\n");
 					state = standby;
@@ -182,7 +182,7 @@ void appMain(){
 			commanderSetSetpoint(&setpoint, 3);
 
 			if(dtrGetPacket(&receivedPacket, 10)){
-				if(receivedPacket.dataSize == sizeof(int) && receivedPacket.sourceId == LEADER_ID && receivedPacket.targetId == my_id){
+				if(receivedPacket.dataSize == sizeof(int) && receivedPacket.sourceId == FOLLOWER_2_ID && receivedPacket.targetId == my_id){
 					memcpy(&command, &receivedPacket.data[0], sizeof(int));
 					DEBUG_PRINT("Command is %d\n", command);
 					switch(command){
@@ -196,7 +196,7 @@ void appMain(){
 							state = landing;
 							break;
 					}
-				} else if(receivedPacket.dataSize == 3*sizeof(float) && receivedPacket.sourceId == LEADER_ID && receivedPacket.targetId == my_id){
+				} else if(receivedPacket.dataSize == 3*sizeof(float) && receivedPacket.sourceId == FOLLOWER_2_ID && receivedPacket.targetId == my_id){
 					memcpy(&leaderX, &receivedPacket.data[0], sizeof(float));
 					memcpy(&leaderY, &receivedPacket.data[4], sizeof(float));
 					memcpy(&leaderZ, &receivedPacket.data[8], sizeof(float));
@@ -218,7 +218,7 @@ void appMain(){
 
 
 			if(dtrGetPacket(&receivedPacket, 10)){
-				if(receivedPacket.dataSize == sizeof(int) && receivedPacket.sourceId == LEADER_ID && receivedPacket.targetId == my_id){
+				if(receivedPacket.dataSize == sizeof(int) && receivedPacket.sourceId == FOLLOWER_2_ID && receivedPacket.targetId == my_id){
 					memcpy(&command, &receivedPacket.data[0], sizeof(int));
 					DEBUG_PRINT("Command is %d\n", command);
 					switch(command){
@@ -231,7 +231,7 @@ void appMain(){
 							state = landing;
 							break;
 					}
-				} else if(receivedPacket.dataSize == 3*sizeof(float) && receivedPacket.sourceId == LEADER_ID && receivedPacket.targetId == my_id){
+				} else if(receivedPacket.dataSize == 3*sizeof(float) && receivedPacket.sourceId == FOLLOWER_2_ID && receivedPacket.targetId == my_id){
 					memcpy(&leaderX, &receivedPacket.data[0], sizeof(float));
 					memcpy(&leaderY, &receivedPacket.data[4], sizeof(float));
 					memcpy(&leaderZ, &receivedPacket.data[8], sizeof(float));

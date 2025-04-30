@@ -193,7 +193,7 @@ typedef enum {
   follower_3,
   follower_2_send,
   init_send
-} currentDrone;
+} P2pState;
 
 // store current id of drone in P2P DTR network
 //static uint8_t my_id;
@@ -207,7 +207,7 @@ static State state = init;
 // leader starts in nothing command
 static Command command = nothing;
 
-static currentDrone drone = init_send;
+static P2pState p2pState = init_send;
 
 static float receivedX;
 static float receivedY;
@@ -297,17 +297,17 @@ void appMain() {
           case square:
             state = square_formation;
             previousCommand = nothing;
-            drone = init_send;
+            p2pState = init_send;
             break;
           case rhombus:
             state = rhombus_formation;
             previousCommand = nothing;
-            drone = init_send;
+            p2pState = init_send;
             break;
           case triangle:
             state = triangle_formation;
             previousCommand = nothing;
-            drone = init_send;
+            p2pState = init_send;
             break;
           case land:
             state = landing;
@@ -408,16 +408,16 @@ void appMain() {
 
       }
       
-      switch(drone){
+      switch(p2pState){
         case init_send:
           // send all followers the square formation command
           sendCommandToFollower(0xFF, SQUARE_FORM);
-          drone = follower_2;
+          p2pState = follower_2;
           break;
         case follower_2:
           // send leader position to app
           transmitData(&txPacket, my_id, logGetFloat(idFlowX), logGetFloat(idFlowY), logGetFloat(idFlowZ));
-          drone = follower_3;
+          p2pState = follower_3;
 
           // send follower 1 drone command to send position to leader
           sendCommandToFollower(FOLLOWER_3_ID, SEND_DATA);
@@ -432,13 +432,13 @@ void appMain() {
 
               transmitData(&txPacket, FOLLOWER_3_ID, receivedX, receivedY, receivedZ);
               DEBUG_PRINT("x: %f, y: %f, z: %f\n", (double)receivedX, (double)receivedY, (double)receivedZ);
-              drone = follower_2_send;
+              p2pState = follower_2_send;
             } 
           }
           break;
         case follower_2_send:
           sendLeaderPosition(0xFF, logGetFloat(idFlowX), logGetFloat(idFlowY), logGetFloat(idFlowZ));
-          drone = follower_2;
+          p2pState = follower_2;
           break;
       }
 

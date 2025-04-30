@@ -45,7 +45,7 @@ class App:
 
         self.root = root
         self.root.title("CPSquare Crazyflie Experimental Framework")
-        start_path = os.path.join(os.getcwd(), "examples", "app_leader", "tools", "cpsquare-logo.png")
+        start_path = os.path.join(os.getcwd(), "examples", "app_leader_web", "tools", "cpsquare-logo.png")
         print(start_path)
         
         img = Image.open(start_path)  # Replace with the path to your image
@@ -203,8 +203,8 @@ class App:
     def connect_to_crazyflie(self):
         # Initialize the low-level drivers
         cflib.crtp.init_drivers(enable_debug_driver=False)
-        self.cf.open_link('radio://0/80/2M/E7E7E7E7E6?rate_limit=100')
-        self.currentLeader = 'radio://0/80/2M/E7E7E7E7E6'
+        self.cf.open_link('radio://0/80/2M/E7E7E7E7E1?rate_limit=200')
+        self.currentLeader = 'radio://0/80/2M/E7E7E7E7E1'
         self.leader_label.config(text=f"Current Leader: {self.currentLeader}")
 
     def disconnect_crazyflie(self):
