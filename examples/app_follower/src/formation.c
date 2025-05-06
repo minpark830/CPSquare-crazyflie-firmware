@@ -22,12 +22,9 @@ The same wallfollowing strategy was used in the following paper:
  
  // variables
  
-
-  static currentDrone drone = leader;
-  static Command command = square;
  // PID controller variables
  static float dt = 0.0; // Time step 
- float k_p = 1.0; // Proportional gain
+ float k_p = 0.9; // Proportional gain
  float Ki = 0.5;  // Integral gain
  float Kd = 0.01; // Derivative gain
  float integral_error_x = 0.0;
@@ -42,45 +39,57 @@ The same wallfollowing strategy was used in the following paper:
  float relative_position_y = 0.0;
  
  
-void initDesiredPosition(currentDrone commandouter, Command positionouter){
-  command = commandouter;
-  drone = positionouter;
-  switch (command) {
-    case square:
-      relative_position_x = 0.0;
-      relative_position_y = 0.0;
-      break;
-    case rhombus:
-      switch (command) {
-        case follower_1:
-          relative_position_x = 0.0;
+void initDesiredPosition(Commandouter commandouter, int my_id){
+  switch (commandouter) {
+    case squareInner:
+      switch (my_id) {
+        case FOLLOWER_1_ID:
+          relative_position_x = 0.2f;
           relative_position_y = 0.0;
         break;
-        case follower_2:
+        case FOLLOWER_2_ID:
           relative_position_x = 0.0;
-          relative_position_y = 0.3;
+          relative_position_y = -0.2f;
         break;
-        case follower_3:
-          relative_position_x = 0.0;
-          relative_position_y = -0.3;
+        case FOLLOWER_3_ID:
+          relative_position_x = 0.2f;
+          relative_position_y = -0.2f;
         break;
         default:
           DEBUG_PRINT("NO VALID COMMAND SENT, AT STATE: standby\n");
       }
       break;
-    case triangle:
-      switch (command) {
-        case follower_1:
-          relative_position_x = -0.3;
+    case rhombusInner:
+      switch (my_id) {
+        case FOLLOWER_1_ID:
+          relative_position_x = 0.2f;
           relative_position_y = 0.0;
         break;
-        case follower_2:
+        case FOLLOWER_2_ID:
           relative_position_x = 0.0;
-          relative_position_y = -0.3;
+          relative_position_y = -0.2f;
         break;
-        case follower_3:
-          relative_position_x = -0.3;
-          relative_position_y = -0.3;
+        case FOLLOWER_3_ID:
+          relative_position_x = 0.2f;
+          relative_position_y = -0.2f;
+        break;
+        default:
+          DEBUG_PRINT("NO VALID COMMAND SENT, AT STATE: standby\n");
+      }
+      break;
+    case triangleInner:
+      switch (my_id) {
+        case FOLLOWER_1_ID:
+          relative_position_x = 0.2f;
+          relative_position_y = 0.0;
+        break;
+        case FOLLOWER_2_ID:
+          relative_position_x = 0.0;
+          relative_position_y = -0.2f;
+        break;
+        case FOLLOWER_3_ID:
+          relative_position_x = 0.2f;
+          relative_position_y = -0.2f;
         break;
         default:
           DEBUG_PRINT("NO VALID COMMAND SENT, AT STATE: standby\n");
@@ -91,18 +100,17 @@ void initDesiredPosition(currentDrone commandouter, Command positionouter){
   }
 }
  
-void calculatePosition(float position_leader_x, float position_leader_y, float leader_yaw, 
-  float *yaw, float *mylocation_x,float *mylocation_y, float timeNow)
+void calculatePosition(float position_leader_x, float position_leader_y, float *mylocation_x, float *mylocation_y, float timeNow)
  {
     dt = timeNow - prevous_time;
     float desired_position_x = position_leader_x + relative_position_x;
     float error_x = desired_position_x - *mylocation_x;
-    float distance_x = position_leader_x- *mylocation_x;
+    // float distance_x = position_leader_x- *mylocation_x;
     // Maintain minimum distance
-    if (distance_x < min_distance){
-        float scale = 0.075;
-        error_x = error_x * (1/ (distance_x*scale));
-    }
+    // if (distance_x < min_distance){
+    //     float scale = 0.075;
+    //     error_x = error_x * (1/ (distance_x*scale));
+    // }
     // PID control
     integral_error_x += integral_error_x * dt;
     float derivative_error_x = (error_x - previous_error_x) / dt;
@@ -112,12 +120,12 @@ void calculatePosition(float position_leader_x, float position_leader_y, float l
 
     float desired_position_y = position_leader_y + relative_position_y;
     float error_y = desired_position_y - *mylocation_y;
-    float distance_y = position_leader_y - *mylocation_y;
+    // float distance_y = position_leader_y - *mylocation_y;
     // Maintain minimum distance
-    if (distance_y < min_distance){
-        float scale = 0.075;
-        error_y = error_y * (1/ (distance_y*scale));
-    }
+    // if (distance_y < min_distance){
+    //     float scale = 0.075;
+    //     error_y = error_y * (1/ (distance_y*scale));
+    // }
     // PID control
     integral_error_y = integral_error_y + integral_error_y * dt;
     float derivative_error_y = (error_y - previous_error_y) / dt;
@@ -125,15 +133,15 @@ void calculatePosition(float position_leader_x, float position_leader_y, float l
     *mylocation_y += (control_input_y * dt);
     previous_error_y = error_y;
 
-    float desired_position_yaw = leader_yaw;
-    float error_yaw = desired_position_yaw - *yaw;
+    // float desired_position_yaw = leader_yaw;
+    // float error_yaw = desired_position_yaw - *yaw;
     
-    // PID control
-    integral_error_yaw = integral_error_yaw + integral_error_yaw * dt;
-    float derivative_error_yaw = (error_yaw - previous_error_yaw) / dt;
-    float control_input_yaw = k_p * error_yaw + Ki * integral_error_yaw + Kd * derivative_error_yaw;
-    *yaw += (control_input_yaw * dt);
-    previous_error_yaw = error_yaw;
+    // // PID control
+    // integral_error_yaw = integral_error_yaw + integral_error_yaw * dt;
+    // float derivative_error_yaw = (error_yaw - previous_error_yaw) / dt;
+    // float control_input_yaw = k_p * error_yaw + Ki * integral_error_yaw + Kd * derivative_error_yaw;
+    // *yaw += (control_input_yaw * dt);
+    // previous_error_yaw = error_yaw;
 
     prevous_time = timeNow;
  }

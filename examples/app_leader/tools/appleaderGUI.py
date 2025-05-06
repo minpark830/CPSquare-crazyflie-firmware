@@ -45,7 +45,7 @@ class App:
         img = Image.open(start_path)  # Replace with the path to your image
         
         # Rescale the image (change size to 300x300 pixels)
-        img_resized = img.resize((150, 150))  # Replace (300, 300) with your desired size
+        img_resized = img.resize((300, 300))  # Replace (300, 300) with your desired size
         
         # Convert the resized image to a format Tkinter can use
         img_tk = ImageTk.PhotoImage(img_resized)
@@ -57,49 +57,49 @@ class App:
         # IMPORTANT DONT DELETE need as reference for 
         root.img = img_tk
 
-        self.leader_label = tk.Label(root, text=f"Current Leader: {self.currentLeader}", font=("Arial", 14), bg='white')
+        self.leader_label = tk.Label(root, text=f"Current Leader: {self.currentLeader}", font=("Arial", 24), bg='white')
         self.leader_label.pack()
 
         # Leader Buttons
         leader_frame = tk.Frame(root, bg='white')
         leader_frame.pack(pady=20)
 
-        connect_button = tk.Button(leader_frame, text="Connect Leader", command=self.connect_to_crazyflie)
+        connect_button = tk.Button(leader_frame, text="Connect Leader",font=("Arial", 16), command=self.connect_to_crazyflie)
         connect_button.pack(side='left', padx=10)
 
-        land_button = tk.Button(leader_frame, text="Land Leader", command=self.land_crazyflie)
+        land_button = tk.Button(leader_frame, text="Land Leader",font=("Arial", 16), command=self.land_crazyflie)
         land_button.pack(side='left', padx=10)
 
-        disconnect_button = tk.Button(leader_frame, text="Disconnect Leader", command=self.disconnect_crazyflie)
+        disconnect_button = tk.Button(leader_frame, text="Disconnect Leader",font=("Arial", 16), command=self.disconnect_crazyflie)
         disconnect_button.pack(side='left', padx=10)
 
-        command_label = tk.Label(root, text=f"Available Commands", font=("Arial", 14), bg='white')
+        command_label = tk.Label(root, text=f"Available Commands", font=("Arial", 24), bg='white')
         command_label.pack()
         
         # Commands
         command_frame = tk.Frame(root, bg='white')
         command_frame.pack(pady=20)
 
-        start_button = tk.Button(command_frame, text="Start Command", command=self.sendStartCommand)
+        start_button = tk.Button(command_frame, text="Start Command",font=("Arial", 16), command=self.sendStartCommand)
         start_button.pack(side='left', padx=10)
 
-        square_form_button = tk.Button(command_frame, text="Square Formation Command", command=self.sendSquareCommand)
+        square_form_button = tk.Button(command_frame, text="Square Formation Command",font=("Arial", 16), command=self.sendSquareCommand)
         square_form_button.pack(side='left', padx=10)
 
-        rhombus_form_button = tk.Button(command_frame, text="Rhombus Formation Command", command=self.sendSquareCommand)
+        rhombus_form_button = tk.Button(command_frame, text="Rhombus Formation Command",font=("Arial", 16), command=self.sendSquareCommand)
         rhombus_form_button.pack(side='left', padx=10)
 
-        triangle_form_button = tk.Button(command_frame, text="Triangle Formation Command", command=self.sendSquareCommand)
+        triangle_form_button = tk.Button(command_frame, text="Triangle Formation Command",font=("Arial", 16), command=self.sendSquareCommand)
         triangle_form_button.pack(side='left', padx=10)
 
-        control_label = tk.Label(root, text=f"Available Controls", font=("Arial", 14), bg='white')
+        control_label = tk.Label(root, text=f"Available Controls", font=("Arial", 24), bg='white')
         control_label.pack()
         
         # Controls
         control_frame = tk.Frame(root, bg='white')
         control_frame.pack(pady=20)
 
-        control_font = ("Arial", 10)  # Big font for arrow symbols
+        control_font = ("Arial", 16)  # Big font for arrow symbols
         control_size = 4             # Width and height in character units
 
         # Up Arrow
@@ -122,14 +122,14 @@ class App:
         stop_button = tk.Button(control_frame, text="■", font=control_font, width=control_size, command=self.sendStopCommand)
         stop_button.grid(row=1, column=1)
 
-        data_label = tk.Label(root, text=f"Data Commands", font=("Arial", 14), bg='white')
+        data_label = tk.Label(root, text=f"Data Commands", font=("Arial", 20), bg='white')
         data_label.pack()
 
         # Data 
         data_frame = tk.Frame(root, bg='white')
         data_frame.pack(pady=20)
 
-        save_button = tk.Button(data_frame, text="Save Data", command=self.saveData)
+        save_button = tk.Button(data_frame, text="Save Data", font=("Arial", 16), command=self.saveData)
         save_button.pack()
 
 

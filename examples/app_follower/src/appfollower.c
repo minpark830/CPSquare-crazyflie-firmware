@@ -27,6 +27,11 @@
 #include "token_ring.h"
 #include "DTR_p2p_interface.h"
 
+#include "formation.h"
+#include "formation.c"
+
+#define MESSAGE_LENGHT 1
+
 #define START 1
 #define SEND_DATA 2
 #define LAND 3
@@ -47,7 +52,7 @@ typedef enum {
 } Command;
 
 // define the ids of each node in the network
-#define NETWORK_TOPOLOGY {.size = 3, .devices_ids = {231, 232, 230} } // Maximum size of network is 20 by default
+// #define NETWORK_TOPOLOGY {.size = 3, .devices_ids = {231, 232, 230} } // Maximum size of network is 20 by default
 //#define NETWORK_TOPOLOGY {.size = 4, .devices_ids = {0, 1, 2, 3} } // Maximum size of network is 20 by default
 
 #define LEADER_ID 231
@@ -59,15 +64,15 @@ typedef enum {
 static uint8_t my_id;
 
 // store defined network topology and ids in the network
-static dtrTopology topology = NETWORK_TOPOLOGY;
+// static dtrTopology topology = NETWORK_TOPOLOGY;
 
 // store leader drone current position
 
-static float leaderX;
-static float leaderY;
-static float leaderZ;
+static float leaderX = 0.0;
+static float leaderY = 0.0;
+static float leaderZ = 0.0;
 
-static int command;
+// static int command;
 
 
 // leader starts in init state
@@ -94,37 +99,89 @@ static void setHoverSetpoint(setpoint_t *setpoint, float x, float y, float z, fl
 }
 
 // function to load/send transmit packet so it transmit current x, y, z of leader drone to follower
-void sendFollowerPosition(float x, float y, float z){
-	dtrPacket transmitSignal;
-	transmitSignal.messageType = DATA_FRAME;
-	transmitSignal.sourceId = my_id;
-	transmitSignal.targetId = LEADER_ID;
+// void sendFollowerPosition(float x, float y, float z){
+// 	dtrPacket transmitSignal;
+// 	transmitSignal.messageType = DATA_FRAME;
+// 	transmitSignal.sourceId = my_id;
+// 	transmitSignal.targetId = LEADER_ID;
 	
-	memcpy(&transmitSignal.data[0], &x, sizeof(float));         
-	memcpy(&transmitSignal.data[4], &y, sizeof(float));         
-	memcpy(&transmitSignal.data[8], &z, sizeof(float));       
+// 	memcpy(&transmitSignal.data[0], &x, sizeof(float));         
+// 	memcpy(&transmitSignal.data[4], &y, sizeof(float));         
+// 	memcpy(&transmitSignal.data[8], &z, sizeof(float));       
   
-	transmitSignal.dataSize = 3 * sizeof(float);  
-	transmitSignal.packetSize = DTR_PACKET_HEADER_SIZE + transmitSignal.dataSize;
+// 	transmitSignal.dataSize = 3 * sizeof(float);  
+// 	transmitSignal.packetSize = DTR_PACKET_HEADER_SIZE + transmitSignal.dataSize;
   
-	bool res = dtrSendPacket(&transmitSignal);
+// 	bool res = dtrSendPacket(&transmitSignal);
   
-	if (res) {
-		DTR_DEBUG_PRINT("Send Follower Position\n");
-	} else {
-		DEBUG_PRINT("Didn't Send Follower Position\n");
-	}
-}
+// 	if (res) {
+// 		DTR_DEBUG_PRINT("Send Follower Position\n");
+// 	} else {
+// 		DEBUG_PRINT("Didn't Send Follower Position\n");
+// 	}
+// }
 
-void p2pcallbackHandler(P2PPacket *p){
-	// If the packet is a DTR service packet, then the handler will handle it.
-	// It returns true if the packet was handled.
+void p2preply(void){
+   
+	logVarId_t idFlowX = logGetVarId("stateEstimate", "x");
+	logVarId_t idFlowY = logGetVarId("stateEstimate", "y");
+	logVarId_t idFlowZ = logGetVarId("stateEstimate", "z");
+	// paramVarId_t idFlowDeck = paramGetVarId("deck", "bcFlow2");
+	float pos_X = logGetFloat(idFlowX);
+	float pos_Y = logGetFloat(idFlowY);
+	float pos_Z = logGetFloat(idFlowZ);
+	static P2PPacket p_reply;
+	p_reply.port=0x00;
+	p_reply.data[0]=my_id;
+	//char *str="G";
+	memcpy(&p_reply.data[1], &pos_X, sizeof(float));
+	memcpy(&p_reply.data[1 + sizeof(float)], &pos_Y, sizeof(float));
+	memcpy(&p_reply.data[1 + (2*sizeof(float))], &pos_Z, sizeof(float));
+	p_reply.size = 1 + 3 * sizeof(float);  // ID + velFront + velSide
+	radiolinkSendP2PPacketBroadcast(&p_reply);
+	DEBUG_PRINT("p2preply sent\n");
+   }
 
-    if (!dtrP2PIncomingHandler(p)){
-		// If packet was not handled from DTR , then it is a normal packet 
-		// that user has to handle. 
+   void p2pcallbackHandler(P2PPacket *p){
+	// Parse the data from the other crazyflie and print it
+	uint8_t other_id = p->data[0];
+	static char msg[MESSAGE_LENGHT + 1];
+	memcpy(&msg, &p->data[1], sizeof(char)*MESSAGE_LENGHT);
+	msg[MESSAGE_LENGHT] = 0;
+	uint8_t rssi = p->rssi;
+	DEBUG_PRINT("[RSSI: -%d dBm] Message from CF nr. %d, %s\n", rssi, other_id, msg);
+	if (other_id == LEADER_ID){
+	  DEBUG_PRINT("in msg\n");
+	  if (strcmp(msg, "i") == 0) {
+		DEBUG_PRINT("idle\n");
+		state = init;
+	  } 
+	  else if (strcmp(msg, "w") == 0) {
+		DEBUG_PRINT("standby\n");
+		p2preply();
+		state = standby;
+		
+	  }
+	  else if (strcmp(msg, "s") == 0) {
+		DEBUG_PRINT("formation\n");
+		p2preply();
+		state = square_formation;
+		
+	  }
+	  else if (strcmp(msg, "l") == 0) {
+		DEBUG_PRINT("stopping\n");
+		state = landing;
+	  }
+	  else if (state == square_formation) {
+		memcpy(&leaderX, &p->data[1], sizeof(float));
+		memcpy(&leaderY, &p->data[1 + sizeof(float)], sizeof(float));
+		memcpy(&leaderZ, &p->data[1 + (2*sizeof(float))], sizeof(float));
+		p2preply();
+		//DEBUG_PRINT("Received velFront = %f, velSide = %f\n", velFront, (double)velSide);
+	  }
+	  
 	}
-}
+  }
 
 void appMain(){
 
@@ -132,23 +189,22 @@ void appMain(){
 
 	logVarId_t idFlowX = logGetVarId("stateEstimate", "x");
   	logVarId_t idFlowY = logGetVarId("stateEstimate", "y");
-	logVarId_t idFlowZ = logGetVarId("stateEstimate", "z");
+	// logVarId_t idFlowZ = logGetVarId("stateEstimate", "z");
 	//paramVarId_t idFlowDeck = paramGetVarId("deck", "bcFlow2");
 	
 	// set self id for network
 	my_id = dtrGetSelfId();
 
-	// enable P2P DTR network
-	dtrEnableProtocol(topology);
-
 	DEBUG_PRINT("ID: %d\n", my_id);
 
 	vTaskDelay(2000);
-
+	// float timeOuter;
 	// register the callback function so that the CF can receive packets as well
 	p2pRegisterCB(p2pcallbackHandler);
 
-	dtrPacket receivedPacket;
+	static P2PPacket p_reply;
+	p_reply.port=0x00;
+	p_reply.data[0]=my_id;
 
 
 	//DEBUG_PRINT("First Kalman Filter Reset\n");
@@ -163,19 +219,21 @@ void appMain(){
 		if(state==init){
 			// wait for command to start up from leader drone
 			// wait until a P2P DTR packet is received
-
-			if(dtrGetPacket(&receivedPacket, portMAX_DELAY)){
-				//DEBUG_PRINT("Received data from %d : \n",receivedPacket.sourceId);
-				estimatorKalmanInit();
-				// received the start command from leader drone
-				if(receivedPacket.dataSize == sizeof(int) && receivedPacket.data[0] == START && receivedPacket.sourceId == LEADER_ID){
+			vTaskDelay(M2T(30));
+			memset(&setpoint, 0, sizeof(setpoint_t));
+        	commanderSetSetpoint(&setpoint, 3);
+			// if(dtrGetPacket(&receivedPacket, portMAX_DELAY)){
+			// 	//DEBUG_PRINT("Received data from %d : \n",receivedPacket.sourceId);
+			// 	estimatorKalmanInit();
+			// 	// received the start command from leader drone
+			// 	if(receivedPacket.dataSize == sizeof(int) && receivedPacket.data[0] == START && receivedPacket.sourceId == LEADER_ID){
 					
-					DEBUG_PRINT("Received start command from leader\n");
-					state = standby;
-					setHoverSetpoint(&setpoint, 0, 0, 0.5, 0);
-					commanderSetSetpoint(&setpoint, 3);
-				}
-			} 
+			// 		DEBUG_PRINT("Received start command from leader\n");
+			// 		state = standby;
+			// 		setHoverSetpoint(&setpoint, 0, 0, 0.5, 0);
+			// 		commanderSetSetpoint(&setpoint, 3);
+			// 	}
+			// } 
 			
 		} else if(state==standby){
 
@@ -185,32 +243,27 @@ void appMain(){
 			setHoverSetpoint(&setpoint, 0, 0, 0.5, 0);
 			commanderSetSetpoint(&setpoint, 3);
 
-			if(dtrGetPacket(&receivedPacket, 10)){
-				if(receivedPacket.dataSize == sizeof(int) && receivedPacket.sourceId == LEADER_ID && receivedPacket.targetId == my_id){
-					memcpy(&command, &receivedPacket.data[0], sizeof(int));
-					DEBUG_PRINT("Command is %d\n", command);
-					switch(command){
-						case SQUARE_FORM:
-							state = square_formation;
-							break;
-						case LAND:
-							state = landing;
-							break;
-					}
-				} else if(receivedPacket.dataSize == 3*sizeof(float) && receivedPacket.sourceId == LEADER_ID && receivedPacket.targetId == my_id){
-					memcpy(&leaderX, &receivedPacket.data[0], sizeof(float));
-					memcpy(&leaderY, &receivedPacket.data[4], sizeof(float));
-					memcpy(&leaderZ, &receivedPacket.data[8], sizeof(float));
-					DEBUG_PRINT("Received packet from Leader drone\n");
-					DEBUG_PRINT("From %d x: %f, y: %f, z: %f\n", receivedPacket.sourceId, (double)leaderX, (double)leaderY, (double)leaderZ);
-				}
-			}
+			// if(dtrGetPacket(&receivedPacket, 10)){
+			// 	if(receivedPacket.dataSize == sizeof(int) && receivedPacket.sourceId == LEADER_ID && receivedPacket.targetId == my_id){
+			// 		memcpy(&command, &receivedPacket.data[0], sizeof(int));
+			// 		DEBUG_PRINT("Command is %d\n", command);
+			// 		switch(command){
+			// 			case SQUARE_FORM:
+			// 				state = square_formation;
+ 			// 				initDesiredPosition(1, my_id);
+			// 				break;
+			// 			case LAND:
+			// 				state = landing;
+			// 				break;
+			// 		}
+			// 	} 
+			// }
 
 		} else if(state==square_formation){
 
 			DEBUG_PRINT("Current State: square_formation\n");
-			float newX = 0;
-			float newY = 0;
+			static float newX = 0;
+			static float newY = 0;
 
 			switch(my_id){
 				case FOLLOWER_1_ID:
@@ -226,34 +279,30 @@ void appMain(){
 					newY = leaderY - 0.2f;
 					break;
 			}
+			
+			// if(dtrGetPacket(&receivedPacket, 10)){
+			// 	DEBUG_PRINT("Packet Recived\n");
+			// 	if(receivedPacket.dataSize == sizeof(int) && receivedPacket.sourceId == LEADER_ID && receivedPacket.targetId == my_id){
+			// 		memcpy(&command, &receivedPacket.data[0], sizeof(int));
+			// 		DEBUG_PRINT("Command is %d\n", command);
+			// 		switch(command){
+			// 			case SEND_DATA:
+			// 				DEBUG_PRINT("Send Data to Leader\n");
+			// 				DEBUG_PRINT("x: %f, y: %f, z: %f\n", (double)logGetFloat(idFlowX), (double)logGetFloat(idFlowY), (double)logGetFloat(idFlowZ));
+			// 				sendFollowerPosition(logGetFloat(idFlowX), logGetFloat(idFlowY), logGetFloat(idFlowZ));	
+			// 				break;
+			// 			case LAND:
+			// 				state = landing;
+			// 				break;
+			// 		}
+			// 	} 
+			// }
 
-			vTaskDelay(10);
+			// timeOuter = usecTimestamp() / 1e6;
+			// calculatePosition(leaderX, leaderY, &newX, &newY, timeOuter);
+			vTaskDelay(20);
 			setHoverSetpoint(&setpoint, newX, newY, 0.5, 0);
 			commanderSetSetpoint(&setpoint, 3);
-
-
-			if(dtrGetPacket(&receivedPacket, 10)){
-				if(receivedPacket.dataSize == sizeof(int) && receivedPacket.sourceId == LEADER_ID && receivedPacket.targetId == my_id){
-					memcpy(&command, &receivedPacket.data[0], sizeof(int));
-					DEBUG_PRINT("Command is %d\n", command);
-					switch(command){
-						case SEND_DATA:
-							DEBUG_PRINT("Send Data to Leader\n");
-							DEBUG_PRINT("x: %f, y: %f, z: %f\n", (double)logGetFloat(idFlowX), (double)logGetFloat(idFlowY), (double)logGetFloat(idFlowZ));
-							sendFollowerPosition(logGetFloat(idFlowX), logGetFloat(idFlowY), logGetFloat(idFlowZ));	
-							break;
-						case LAND:
-							state = landing;
-							break;
-					}
-				} else if(receivedPacket.dataSize == 3*sizeof(float) && receivedPacket.sourceId == LEADER_ID && receivedPacket.targetId == my_id){
-					memcpy(&leaderX, &receivedPacket.data[0], sizeof(float));
-					memcpy(&leaderY, &receivedPacket.data[4], sizeof(float));
-					memcpy(&leaderZ, &receivedPacket.data[8], sizeof(float));
-					DEBUG_PRINT("Received packet from Leader drone\n");
-					DEBUG_PRINT("From %d x: %f, y: %f, z: %f\n", receivedPacket.sourceId, (double)leaderX, (double)leaderY, (double)leaderZ);
-				}
-			}
 
 		} else if(state==landing){
 			DEBUG_PRINT("Current State: landing\n");

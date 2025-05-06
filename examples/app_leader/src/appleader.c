@@ -119,26 +119,16 @@ static void transmitData(testPacketTX *txPacket, int id, float x, float y, float
 
 // function to load/send transmit packet so it transmit current x, y, z of leader drone to follower
 void sendLeaderPosition(int targetID, float x, float y, float z){
-  dtrPacket transmitSignal;
-  transmitSignal.messageType = DATA_FRAME;
-  transmitSignal.sourceId = my_id;
-  transmitSignal.targetId = targetID;
-  
-  memcpy(&transmitSignal.data[0], &x, sizeof(float));         
-  memcpy(&transmitSignal.data[4], &y, sizeof(float));         
-  memcpy(&transmitSignal.data[8], &z, sizeof(float));       
-
-  transmitSignal.dataSize = 3 * sizeof(float);  
-  transmitSignal.packetSize = DTR_PACKET_HEADER_SIZE + transmitSignal.dataSize;
-
-  bool res = dtrSendPacket(&transmitSignal);
-
-  if (res) {
-      DTR_DEBUG_PRINT("Send Leader Position\n");
-  } else {
-      DEBUG_PRINT("Didn't Send Leader Position\n");
-  }
-
+  static P2PPacket p_reply;
+   p_reply.port=0x00;
+   p_reply.data[0]=my_id;
+   //char *str="G";
+   memcpy(&p_reply.data[1], &x, sizeof(float));
+   memcpy(&p_reply.data[1 + sizeof(float)], &y, sizeof(float));
+   memcpy(&p_reply.data[1 + (2*sizeof(float))], &z, sizeof(float));
+   p_reply.size = 1 + 3 * sizeof(float);  // ID + velFront + velSide
+   radiolinkSendP2PPacketBroadcast(&p_reply);
+   DEBUG_PRINT("p2preply sent\n");
 }
 
 // function to load/send transmit packet so it transmit command to follower drone
@@ -262,7 +252,9 @@ void appMain() {
   DEBUG_PRINT("Current ID: %d\n", my_id);
 
   Command previousCommand = nothing;
-
+  static P2PPacket p_reply;
+	p_reply.port=0x00;
+	p_reply.data[0]=my_id;
   // reset kalman filter
   estimatorKalmanInit();
 
@@ -338,7 +330,7 @@ void appMain() {
     } else if(state == square_formation){ 
 
       //DEBUG_PRINT("Current State: square_formation\n");
-
+      sendLeaderPosition(0xFF, logGetFloat(idFlowX), logGetFloat(idFlowY), logGetFloat(idFlowZ));
       switch(previousCommand){
         case right:
           vTaskDelay(10);
@@ -450,7 +442,7 @@ void appMain() {
               transmitData(&txPacket, FOLLOWER_1_ID, receivedX, receivedY, receivedZ);
               DEBUG_PRINT("x: %f, y: %f, z: %f\n", (double)receivedX, (double)receivedY, (double)receivedZ);
               sendCommandToFollower(FOLLOWER_2_ID, SEND_DATA);
-              drone = leader_send;
+              drone = follower_2;
             } 
           }
           break;
