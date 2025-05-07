@@ -203,9 +203,9 @@ class App:
     def connect_to_crazyflie(self):
         # Initialize the low-level drivers
         cflib.crtp.init_drivers(enable_debug_driver=False)
-        self.currentLeader = 'radio://1/70/2M/E7E7E7E7E3'
+        self.cf.open_link('radio://1/60/2M/E7E7E7E7E3?rate_limit=100')
+        self.currentLeader = 'radio://1/60/2M/E7E7E7E7E3'
         self.leader_label.config(text=f"Current Leader: {self.currentLeader}")
-        self.cf.open_link('radio://1/70/2M/E7E7E7E7E3?rate_limit=200')
 
 
     def disconnect_crazyflie(self):
