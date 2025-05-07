@@ -10,6 +10,7 @@ from cflib.crazyflie import Crazyflie
 from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
 from cflib.crazyflie.log import LogConfig
 from cflib.positioning.position_hl_commander import PositionHlCommander
+from cflib.crazyflie.syncLogger import SyncLogger
 
 # python leader.py radio://0/0/2M/E7E7E7E7E1
 
@@ -72,6 +73,47 @@ async def telemetry_loop(websocket):
 def reset_estimator(scf):
     scf.cf.param.set_value('kalman.resetEstimation', '1')
     time.sleep(0.1)
+    scf.cf.param.set_value('kalman.resetEstimation', '0')
+    _wait_for_position_estimator(scf.cf)
+
+
+def _wait_for_position_estimator(cf):
+    print('Waiting for estimator to find position...', end='\r')
+
+    log_config = LogConfig(name='Kalman Variance', period_in_ms=500)
+    log_config.add_variable('kalman.varPX', 'float')
+    log_config.add_variable('kalman.varPY', 'float')
+    log_config.add_variable('kalman.varPZ', 'float')
+
+    var_y_history = [1000] * 10
+    var_x_history = [1000] * 10
+    var_z_history = [1000] * 10
+
+    threshold = 0.001
+
+    with SyncLogger(cf, log_config) as logger:
+        for log_entry in logger:
+            data = log_entry[1]
+
+            var_x_history.append(data['kalman.varPX'])
+            var_x_history.pop(0)
+            var_y_history.append(data['kalman.varPY'])
+            var_y_history.pop(0)
+            var_z_history.append(data['kalman.varPZ'])
+            var_z_history.pop(0)
+
+            min_x = min(var_x_history)
+            max_x = max(var_x_history)
+            min_y = min(var_y_history)
+            max_y = max(var_y_history)
+            min_z = min(var_z_history)
+            max_z = max(var_z_history)
+
+            if (max_x - min_x) < threshold and (
+                    max_y - min_y) < threshold and (
+                    max_z - min_z) < threshold:
+                print('Waiting for estimator to find position...success!')
+                break
 
 async def listen_for_commands(scf):
     global current_state
@@ -89,8 +131,10 @@ async def listen_for_commands(scf):
 
                 if command.lower() == "takeoff":
                     current_state = State.TAKEOFF
+                    await websocket.send("takeoff")
                 elif command.lower() == "land":
                     current_state = State.LANDING
+                    await websocket.send("land")
                 elif command.lower() == "right":
                     current_state = State.RIGHT
                 elif command.lower() == "left":
@@ -105,12 +149,14 @@ async def listen_for_commands(scf):
                     current_state = State.DOWN
                 elif command.lower() == "form_line":
                     current_state = State.FORM_LINE
+                    await websocket.send("form_line")
                 elif command.lower() == "form_triangle":
                     current_state = State.FORM_TRIANGLE
+                    await websocket.send("form_triangle")
                 else:
                     print("Unknown command")
 
-                await websocket.send(f"ACK: {current_state.name}")
+                #await websocket.send(f"ACK: {current_state.name}")
 
             except websockets.ConnectionClosed:
                 print("WebSocket connection closed")
@@ -165,6 +211,7 @@ async def state_machine_loop(commander, scf):
         elif current_state == State.FORM_LINE:
             print("[FSM] Form Line.")
             current_state = State.STANDBY
+            
         
         elif current_state == State.FORM_TRIANGLE:
             print("[FSM] Form Triangle.")

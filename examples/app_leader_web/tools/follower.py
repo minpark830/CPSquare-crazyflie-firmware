@@ -9,6 +9,7 @@ import cflib.crtp
 from cflib.crazyflie import Crazyflie
 from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
 from cflib.crazyflie.log import LogConfig
+from cflib.positioning.position_hl_commander import PositionHlCommander
 
 # python follower.py radio://1/20/2M/E7E7E7E7E2
 # python follower.py radio://2/40/2M/E7E7E7E7E3
@@ -17,18 +18,27 @@ from cflib.crazyflie.log import LogConfig
 # Only output errors from cflib
 logging.basicConfig(level=logging.ERROR)
 
+class Follower(Enum):
+    FOLLOWER1 = 1
+    FOLLOWER2 = 2
+    FOLLOWER3 = 3
+
 class State(Enum):
     INIT = 1
     TAKEOFF = 2
-    FLYING = 3
-    LANDING = 4
-    STANDBY = 5
+    LANDING = 3
+    STANDBY = 4
+    FORM_LINE = 5
+    FORM_TRIANGLE = 6
+
 
 current_state = State.INIT
 latest_data = {}
 
 # WebSocket URI for the leader server
 WS_URI = None
+
+current_follower = None
 
 def simple_log_setup(scf, log_config):
     cf = scf.cf
@@ -67,7 +77,7 @@ async def listen_for_commands(scf):
     global current_state
 
     async with websockets.connect(WS_URI) as websocket:
-        print("Connected to WebSocket server at /ws/leader")
+        print("Connected to WebSocket server at /ws/followers/id")
 
         # Start telemetry sending task
         telemetry_task = asyncio.create_task(telemetry_loop(websocket))
@@ -81,8 +91,8 @@ async def listen_for_commands(scf):
                     current_state = State.TAKEOFF
                 elif command.lower() == "land":
                     current_state = State.LANDING
-                elif command.lower() == "standby":
-                    current_state = State.STANDBY
+                elif command.lower() == "form_line":
+                    current_state = State.FORM_LINE
                 else:
                     print("Unknown command")
 
@@ -93,11 +103,42 @@ async def listen_for_commands(scf):
                 telemetry_task.cancel()
                 break
 
+async def state_machine_loop(commander, scf):
+    global current_state
+
+    while True:
+        if current_state == State.TAKEOFF:
+            reset_estimator(scf)
+            print("[FSM] Taking off...")
+            commander.take_off(0.5)
+            current_state = State.STANDBY
+
+        elif current_state == State.LANDING:
+            print("[FSM] Landing...")
+            commander.land()
+            current_state = State.INIT
+
+        elif current_state == State.STANDBY:
+            print("[FSM] Standing by.")
+            commander.go_to()
+            await asyncio.sleep(0.1)
+        
+        elif current_state == State.FORM_LINE:
+            print("[FSM] Form Line.")
+            current_state = State.STANDBY
+            
+        
+        elif current_state == State.FORM_TRIANGLE:
+            print("[FSM] Form Triangle.")
+            current_state = State.STANDBY
+
+        await asyncio.sleep(0.1)
+
 def reset_estimator(scf):
     scf.cf.param.set_value('kalman.resetEstimation', '1')
     time.sleep(0.1)
-
-
+    scf.cf.param.set_value('kalman.resetEstimation', '0')
+    print("Estimator reset.")
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Connect to a Crazyflie using its URI.")
@@ -111,10 +152,13 @@ if __name__ == '__main__':
     match(URI):
         case "radio://1/20/2M/E7E7E7E7E2": 
             WS_URI = f"ws://127.0.0.1:8000/ws/followers/0"
+            current_follower = Follower.FOLLOWER1
         case "radio://2/40/2M/E7E7E7E7E3":
             WS_URI = f"ws://127.0.0.1:8000/ws/followers/1"
+            current_follower = Follower.FOLLOWER2
         case "radio://3/60/2M/E7E7E7E7E4":
             WS_URI = f"ws://127.0.0.1:8000/ws/followers/2"
+            current_follower = Follower.FOLLOWER3
 
     # Initialize Crazyflie drivers
     cflib.crtp.init_drivers()
@@ -130,4 +174,11 @@ if __name__ == '__main__':
     with SyncCrazyflie(URI, cf=Crazyflie(rw_cache='./cache')) as scf:
         simple_log_setup(scf, lg_stab)
         reset_estimator(scf)
-        asyncio.run(listen_for_commands(scf))
+
+        follower = PositionHlCommander(scf)
+        loop = asyncio.get_event_loop()
+        tasks = asyncio.gather(
+            listen_for_commands(scf),
+            state_machine_loop(follower, scf)
+        )
+        loop.run_until_complete(tasks)

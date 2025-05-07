@@ -48,7 +48,7 @@ async def get_positions_page():
         <div class="logo">
             <img src="/static/cpsquare-logo.png" alt="CPSquare Logo" width="75">
         </div>
-    
+
         <b>&copy; Copyright of CPSquare Lab 2025</b>
 
         <script>
@@ -188,6 +188,8 @@ async def websocket_endpoint(websocket: WebSocket):
                 else:
                     print("Received data is not a dictionary. Ignoring.")
             except Exception as e:
+                broadcast_to_followers(data)
+                print(f"Broadcast to followers: {data}")
                 print(f"Error parsing data: {e}")
     except WebSocketDisconnect:
         connected_leader = None
