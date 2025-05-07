@@ -19,9 +19,15 @@ logging.basicConfig(level=logging.ERROR)
 class State(Enum):
     INIT = 1
     TAKEOFF = 2
-    FLYING = 3
-    LANDING = 4
-    STANDBY = 5
+    LANDING = 3
+    STANDBY = 4
+    RIGHT = 5
+    LEFT = 6
+    FORWARD = 7
+    BACK = 8
+    UP = 9
+    DOWN = 10
+
 
 current_state = State.INIT
 latest_data = {}
@@ -96,25 +102,32 @@ async def listen_for_commands(scf):
                 telemetry_task.cancel()
                 break
 
-async def state_machine_loop(commander):
+async def state_machine_loop(commander, scf):
     global current_state
 
     while True:
         if current_state == State.TAKEOFF:
-            reset_estimator(commander)
+            reset_estimator(scf)
             print("[FSM] Taking off...")
-            commander.take_off(0.5, 2.0)
+            commander.take_off(0.5)
             current_state = State.STANDBY
 
         elif current_state == State.LANDING:
             print("[FSM] Landing...")
-            commander.land(0.0, 2.0)
+            commander.land()
             current_state = State.INIT
 
         elif current_state == State.STANDBY:
             print("[FSM] Standing by.")
-            commander.hover
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.1)
+        
+        elif current_state == State.RIGHT:
+            print("[FSM] To the Right.")
+            commander.right(0.1)
+        
+        elif current_state == State.LEFT:
+            print("[FSM] To the Left.")
+            commander.left(0.1)
 
         await asyncio.sleep(0.1)
 
@@ -146,6 +159,6 @@ if __name__ == '__main__':
         loop = asyncio.get_event_loop()
         tasks = asyncio.gather(
             listen_for_commands(scf),
-            state_machine_loop(leader)
+            state_machine_loop(leader, scf)
         )
         loop.run_until_complete(tasks)

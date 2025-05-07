@@ -26,7 +26,28 @@ async def get_positions_page():
     </head>
     <body>
         <h1>Positions of Leader and Followers</h1>
-        <div id="positionsChart" style="width: 100%; height: 600px;"></div>
+        <div id="positionsChart" style="width: 100%; height: 100%;"></div>
+        <h2>Leader Control Panel</h2>
+        <button onclick="sendCommand('takeoff')">Take Off</button>
+        <button onclick="sendCommand('land')">Land</button>
+        <button onclick="sendCommand('standby')">Standby</button>
+
+        <script>
+            function sendCommand(cmd) {
+                fetch(`/commands/${cmd}`, {
+                    method: "POST"
+                })
+                .then(response => response.text())
+                .then(result => {
+                    alert(result);
+                    console.log("Command response:", result);
+                })
+                .catch(error => {
+                    console.error("Error sending command:", error);
+                    alert("Failed to send command.");
+                });
+            }
+        </script>
 
         <script>
             // Initial empty data for all positions
@@ -63,9 +84,9 @@ async def get_positions_page():
             var layout = {
                 title: 'Positions of Leader and Followers',
                 scene: {
-                    xaxis: {title: 'X Position'},
-                    yaxis: {title: 'Y Position'},
-                    zaxis: {title: 'Z Position'}
+                    xaxis: {title: 'X Position [m]'},
+                    yaxis: {title: 'Y Position [m]'},
+                    zaxis: {title: 'Z Position [m]'}
                 }
             };
 
