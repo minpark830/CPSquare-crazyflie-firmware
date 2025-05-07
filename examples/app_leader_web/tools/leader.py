@@ -27,7 +27,8 @@ class State(Enum):
     BACK = 8
     UP = 9
     DOWN = 10
-
+    FORM_LINE = 11
+    FORM_TRIANGLE = 12
 
 current_state = State.INIT
 latest_data = {}
@@ -90,8 +91,22 @@ async def listen_for_commands(scf):
                     current_state = State.TAKEOFF
                 elif command.lower() == "land":
                     current_state = State.LANDING
-                elif command.lower() == "standby":
-                    current_state = State.STANDBY
+                elif command.lower() == "right":
+                    current_state = State.RIGHT
+                elif command.lower() == "left":
+                    current_state = State.LEFT
+                elif command.lower() == "forward":
+                    current_state = State.FORWARD
+                elif command.lower() == "back":
+                    current_state = State.BACK
+                elif command.lower() == "up":
+                    current_state = State.UP
+                elif command.lower() == "down":
+                    current_state = State.DOWN
+                elif command.lower() == "form_line":
+                    current_state = State.FORM_LINE
+                elif command.lower() == "form_triangle":
+                    current_state = State.FORM_TRIANGLE
                 else:
                     print("Unknown command")
 
@@ -128,6 +143,32 @@ async def state_machine_loop(commander, scf):
         elif current_state == State.LEFT:
             print("[FSM] To the Left.")
             commander.left(0.1)
+
+        elif current_state == State.FORWARD:
+            print("[FSM] Forward.")
+            commander.forward(0.1)
+
+        elif current_state == State.BACK:
+            print("[FSM] Backward.")
+            commander.back(0.1)
+
+        elif current_state == State.UP:
+            print("[FSM] Go Up.")
+            commander.up(0.1)
+            current_state = State.STANDBY
+
+        elif current_state == State.DOWN:
+            print("[FSM] Go Down.")
+            commander.down(0.1)
+            current_state = State.STANDBY
+        
+        elif current_state == State.FORM_LINE:
+            print("[FSM] Form Line.")
+            current_state = State.STANDBY
+        
+        elif current_state == State.FORM_TRIANGLE:
+            print("[FSM] Form Triangle.")
+            current_state = State.STANDBY
 
         await asyncio.sleep(0.1)
 

@@ -1,10 +1,14 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
 from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 import uvicorn
 import ast
 import json
+import os
 
 app = FastAPI()
+
+app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")), name="static")
 
 connected_followers = {}
 connected_leader = None
@@ -25,12 +29,27 @@ async def get_positions_page():
         <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist@2.17.0"></script>
     </head>
     <body>
-        <h1>Positions of Leader and Followers</h1>
+        <h1>CPSquare Crazyflie Experimental Framework</h1>
         <div id="positionsChart" style="width: 100%; height: 100%;"></div>
-        <h2>Leader Control Panel</h2>
-        <button onclick="sendCommand('takeoff')">Take Off</button>
-        <button onclick="sendCommand('land')">Land</button>
-        <button onclick="sendCommand('standby')">Standby</button>
+        <h2>🎮 Leader Control Panel</h2>
+        <div class="button-grid">
+            <button onclick="sendCommand('takeoff')">🚀 Take Off</button>
+            <button onclick="sendCommand('land')">🛬 Land</button>
+            <button onclick="sendCommand('right')">➡️ Right</button>
+            <button onclick="sendCommand('left')">⬅️ Left</button>
+            <button onclick="sendCommand('forward')">⬆️ Forward</button>
+            <button onclick="sendCommand('back')">⬇️ Back</button>
+            <button onclick="sendCommand('up')">🔼 Up</button>
+            <button onclick="sendCommand('down')">🔽 Down</button>
+            <button onclick="sendCommand('form_line')">📏 Form Line</button>
+            <button onclick="sendCommand('form_triangle')">🔺Form Triangle</button>
+        </div>
+
+        <div class="logo">
+            <img src="/static/cpsquare-logo.png" alt="CPSquare Logo" width="75">
+        </div>
+    
+        <b>&copy; Copyright of CPSquare Lab 2025</b>
 
         <script>
             function sendCommand(cmd) {
