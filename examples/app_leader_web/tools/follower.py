@@ -97,7 +97,7 @@ async def listen_for_commands(scf):
         while True:
             try:
                 command = await websocket.recv()
-                print(f"Received : {command}")
+                #print(f"Received : {command}")
 
                 if command.lower() == "takeoff":
                     current_state = State.TAKEOFF
@@ -148,7 +148,10 @@ async def state_machine_loop(commander):
 
         elif current_state == State.STANDBY:
             print("[FSM] Standing by.")
-            commander.go_to(current_leader_x, current_leader_y - 0.2, current_leader_z)
+            if form_line:
+                commander.go_to(current_leader_x, current_leader_y - 0.2, current_leader_z)
+            elif form_triangle:
+                commander.go_to(current_leader_x, current_leader_y - 0.2, current_leader_z)
             await asyncio.sleep(0.1)
         
         elif current_state == State.FORM_LINE:
