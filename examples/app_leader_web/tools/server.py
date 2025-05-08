@@ -15,6 +15,7 @@ connected_leader = None
 
 follower_1_positions = []
 follower_2_positions = []
+follower_3_positions = []
 leader_positions = []
 
 @app.get("/", response_class=HTMLResponse)
@@ -49,7 +50,7 @@ async def get_positions_page():
             <img src="/static/cpsquare-logo.png" alt="CPSquare Logo" width="75">
         </div>
 
-        <b>&copy; Copyright of CPSquare Lab 2025</b>
+        <b>CPSquare Lab 2025</b>
 
         <script>
             function sendCommand(cmd) {
@@ -58,7 +59,7 @@ async def get_positions_page():
                 })
                 .then(response => response.text())
                 .then(result => {
-                    alert(result);
+                    //alert(result);
                     console.log("Command response:", result);
                 })
                 .catch(error => {
@@ -184,13 +185,13 @@ async def websocket_endpoint(websocket: WebSocket):
                         position_data.get('yaw', 0)
                     ]
                     leader_positions.append(position)  # Store the position as a list
-                    print(f"Stored telemetry data: {position}")
+                    #print(f"Stored telemetry data: {position}")
                 else:
                     print("Received data is not a dictionary. Ignoring.")
             except Exception as e:
-                broadcast_to_followers(data)
+                await broadcast_to_followers(data)
                 print(f"Broadcast to followers: {data}")
-                print(f"Error parsing data: {e}")
+                #print(f"Error parsing data: {e}")
     except WebSocketDisconnect:
         connected_leader = None
         print("Client disconnected")
@@ -201,6 +202,7 @@ async def websocket_endpoint(websocket: WebSocket, id: str):
     await websocket.accept()
 
     connected_followers[id] = websocket
+    print(connected_followers)
     try:
         while True:
             data = await websocket.receive_text()
@@ -220,14 +222,18 @@ async def websocket_endpoint(websocket: WebSocket, id: str):
                     match id:
                         case "0":
                             follower_1_positions.append(position)  # Store the position as a list
-                            print(f"Stored telemetry data: {position}")
+                            #print(f"Stored telemetry data: {position}")
                         case "1":
                             follower_2_positions.append(position)  # Store the position as a list
-                            print(f"Stored telemetry data: {position}")
+                            #print(f"Stored telemetry data: {position}")
+                        case "2":
+                            follower_3_positions.append(position)  # Store the position as a list
+                            #print(f"Stored telemetry data: {position}")
                 else:
                     print("Received data is not a dictionary. Ignoring.")
             except Exception as e:
                 print(f"Error parsing data: {e}")
+                print(data)
             # constantly send most updated leader position
             if leader_positions:
                 latest_position = leader_positions[-1]
@@ -245,8 +251,11 @@ async def websocket_endpoint(websocket: WebSocket, id: str):
         print("Client disconnected")
 
 async def broadcast_to_followers(message: str):
-    for websocket in connected_followers.values():
-        await websocket.send_text(message)
+    if connected_followers:
+        for websocket in connected_followers.values():
+            await websocket.send_text(message)
+    else:
+        print("No followers connected")
 
 
 @app.post("/commands/{command}")

@@ -12,7 +12,7 @@ from cflib.crazyflie.log import LogConfig
 from cflib.positioning.position_hl_commander import PositionHlCommander
 from cflib.crazyflie.syncLogger import SyncLogger
 
-# python leader.py radio://0/0/2M/E7E7E7E7E1
+# python leader.py radio://0/80/2M/E7E7E7E7E1
 
 # Only output errors from cflib
 logging.basicConfig(level=logging.ERROR)
@@ -44,7 +44,7 @@ def simple_log_setup(scf, log_config):
     def log_callback(timestamp, data, logconf):
         global latest_data
         latest_data = data
-        print(f"[{timestamp}] Logged data: {data}")
+        #print(f"[{timestamp}] Logged data: {data}")
 
     log_config.data_received_cb.add_callback(log_callback)
 
@@ -163,12 +163,11 @@ async def listen_for_commands(scf):
                 telemetry_task.cancel()
                 break
 
-async def state_machine_loop(commander, scf):
+async def state_machine_loop(commander):
     global current_state
 
     while True:
         if current_state == State.TAKEOFF:
-            reset_estimator(scf)
             print("[FSM] Taking off...")
             commander.take_off(0.5)
             current_state = State.STANDBY
@@ -231,7 +230,7 @@ if __name__ == '__main__':
     # Initialize Crazyflie drivers
     cflib.crtp.init_drivers()
 
-    lg_stab = LogConfig(name='Stabilizer', period_in_ms=200)
+    lg_stab = LogConfig(name='Stabilizer', period_in_ms=100)
     lg_stab.add_variable('stabilizer.roll', 'float')
     lg_stab.add_variable('stabilizer.pitch', 'float')
     lg_stab.add_variable('stabilizer.yaw', 'float')
@@ -240,13 +239,14 @@ if __name__ == '__main__':
     lg_stab.add_variable('stateEstimate.z', 'float')
 
     with SyncCrazyflie(URI, cf=Crazyflie(rw_cache='./cache')) as scf:
-        simple_log_setup(scf, lg_stab)
         reset_estimator(scf)
+        simple_log_setup(scf, lg_stab)
+        
 
         leader = PositionHlCommander(scf)
         loop = asyncio.get_event_loop()
         tasks = asyncio.gather(
             listen_for_commands(scf),
-            state_machine_loop(leader, scf)
+            state_machine_loop(leader)
         )
         loop.run_until_complete(tasks)
