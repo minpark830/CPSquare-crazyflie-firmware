@@ -167,6 +167,7 @@ async def state_machine_loop(commander):
     global current_state
 
     while True:
+        commander.set_default_velocity(0.2)
         if current_state == State.TAKEOFF:
             print("[FSM] Taking off...")
             commander.take_off(0.5)

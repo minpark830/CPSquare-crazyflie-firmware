@@ -104,7 +104,11 @@ async def listen_for_commands(scf):
                 elif command.lower() == "land":
                     current_state = State.LANDING
                 elif command.lower() == "form_line":
+                    print("recieved form line")
                     current_state = State.FORM_LINE
+                elif command.lower() == "form_triangle":
+                    print("recieved form triangle")
+                    current_state = State.FORM_TRIANGLE
                 else:
                     #print("Unknown command")
                     try:
@@ -134,6 +138,8 @@ async def state_machine_loop(commander):
     global current_leader_x
     global current_leader_y
     global current_leader_z
+    global form_line
+    global form_triangle
 
     while True:
         if current_state == State.TAKEOFF:
@@ -149,9 +155,21 @@ async def state_machine_loop(commander):
         elif current_state == State.STANDBY:
             print("[FSM] Standing by.")
             if form_line:
-                commander.go_to(current_leader_x, current_leader_y - 0.2, current_leader_z)
+                match(current_follower):
+                    case Follower.FOLLOWER1:
+                        commander.go_to(current_leader_x - 0.5, current_leader_y, current_leader_z)
+                    case Follower.FOLLOWER2:
+                        commander.go_to(current_leader_x, current_leader_y + 0.5, current_leader_z)
+                    case Follower.FOLLOWER3:
+                        commander.go_to(current_leader_x, current_leader_y + 0.5, current_leader_z)
             elif form_triangle:
-                commander.go_to(current_leader_x, current_leader_y - 0.2, current_leader_z)
+                match(current_follower):
+                    case Follower.FOLLOWER1:
+                        commander.go_to(current_leader_x, current_leader_y + 0.5, current_leader_z)
+                    case Follower.FOLLOWER2:
+                        commander.go_to(current_leader_x, current_leader_y, current_leader_z)
+                    case Follower.FOLLOWER3:
+                        commander.go_to(current_leader_x - 0.5, current_leader_y, current_leader_z)
             await asyncio.sleep(0.1)
         
         elif current_state == State.FORM_LINE:

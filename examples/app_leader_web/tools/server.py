@@ -127,12 +127,12 @@ async def get_positions_page():
                         var yLeader = leaderPositions.map(pos => pos[1]);
                         var zLeader = leaderPositions.map(pos => pos[2]);
 
-                        var xFollower1 = follower1Positions.map(pos => pos[0]);
+                        var xFollower1 = follower1Positions.map(pos => pos[0] - 0.5);
                         var yFollower1 = follower1Positions.map(pos => pos[1]);
                         var zFollower1 = follower1Positions.map(pos => pos[2]);
 
-                        var xFollower2 = follower2Positions.map(pos => pos[0]);
-                        var yFollower2 = follower2Positions.map(pos => pos[1]);
+                        var xFollower2 = follower2Positions.map(pos => pos[0] - 0.5);
+                        var yFollower2 = follower2Positions.map(pos => pos[1] - 0.5);
                         var zFollower2 = follower2Positions.map(pos => pos[2]);
 
                         // Update the chart with the new positions
