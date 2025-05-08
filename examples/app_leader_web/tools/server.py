@@ -78,7 +78,8 @@ async def get_positions_page():
                 mode: 'markers+lines',
                 type: 'scatter3d',
                 name: 'Leader',
-                marker: {color: 'blue'}
+                marker: {color: 'blue'},
+                symbol: 'x'
             };
 
             var traceFollower1 = {
@@ -88,7 +89,8 @@ async def get_positions_page():
                 mode: 'markers+lines',
                 type: 'scatter3d',
                 name: 'Follower 1',
-                marker: {color: 'red'}
+                marker: {color: 'red'},
+                symbol: 'x'
             };
 
             var traceFollower2 = {
@@ -98,7 +100,8 @@ async def get_positions_page():
                 mode: 'markers+lines',
                 type: 'scatter3d',
                 name: 'Follower 2',
-                marker: {color: 'green'}
+                marker: {color: 'green'},
+                symbol: 'x'
             };
 
             var layout = {
